@@ -65,7 +65,7 @@ export function addTurn(game,{balls=0,outcome='miss',warned=false,rebreak=false,
  return g;
 }
 export function finishGame(game,winner,reason='concession',now=Date.now()){
- if(game.status!=='active'||![0,1].includes(winner))throw Error('Choose a winner for an active game.');
+ if(game.status!=='active'||(![0,1].includes(winner)&&!(winner===null&&reason==='interrupted')))throw Error('Choose a winner for an active game.');
  const g=settleClock(game,now);if(g.clock)g.clock.runningSince=null;g.events.push({type:'finish',winner,reason,at:new Date(now).toISOString()});g.status='finished';g.winner=winner;g.reason=reason;g.endedAt=new Date(now).toISOString();return g;
 }
 export function undo(game){const g=structuredClone(game);g.events.pop();g.status='active';g.winner=null;delete g.endedAt;delete g.reason;if(g.clock){g.clock=settleClock(game).clock;g.clock.runningSince=null;}return g;}
@@ -178,7 +178,7 @@ export function tacticalStats(game){
 }
 export function playerStats(games){
  const map=new Map();
- for(const g of games.filter(g=>g.status==='finished')){
+ for(const g of games.filter(g=>g.status==='finished'&&g.reason!=='interrupted')){
   const s=stateOf(g),tactics=tacticalStats(g);
   g.players.forEach((name,p)=>{
    const key=name.trim().toLocaleLowerCase();
