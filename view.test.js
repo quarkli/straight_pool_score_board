@@ -158,3 +158,23 @@ test('interrupted games preserve scores and timing without a winner or win-rate 
  assert.match(matchHistoryPage([g],{}),/中斷比賽（不判勝負）/);
  assert.deepEqual(playerStats([g]),[]);
 });
+test('undo restores completed rack ownership instead of clearing it through a stale rack marker',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'miss',rackEnd:5});
+ g=addTurn(g,{balls:9,outcome:'continue',rackEnd:14});g.rackClearedAt=g.events.length;
+ g=addTurn(g,{balls:2,outcome:'miss',rackEnd:2});g=undo(g);
+ assert.deepEqual(stateOf(g).scores,[5,9]);assert.equal(rackState(g).count,14);
+ assert.equal(rackState(g).owners[5],0);assert.equal(rackState(g).owners[14],1);
+ assert.equal(stateOf(g).rows.length,2);assert.equal(g.rackClearedAt,undefined);
+});
+test('target limit uses active player score and rack count and recomputes after handover',()=>{
+ let g=addTurn(createGame(['甲','乙'],10),{balls:3,outcome:'miss',rackEnd:3});
+ g=addTurn(g,{balls:3,outcome:'miss',rackEnd:6});
+ let html=scoreboardPage(g);assert.match(html,/data-central-end="13"  aria-label/);assert.match(html,/data-central-end="14" hidden/);
+ g=addTurn(g,{balls:1,outcome:'miss',rackEnd:7});html=scoreboardPage(g);
+ assert.match(html,/data-central-end="14"  aria-label/);assert.match(html,/data-central-end="15" hidden/);
+});
+test('winning score finishes midrack with stopped clock and correct totals',()=>{
+ let g=addTurn(createGame(['甲','乙'],10),{balls:3,outcome:'miss',rackEnd:3});
+ g=addTurn(g,{balls:2,outcome:'miss',rackEnd:5});g=addTurn(g,{balls:7,outcome:'win',rackEnd:12});
+ assert.equal(g.status,'finished');assert.equal(g.winner,0);assert.equal(g.clock.runningSince,null);assert.deepEqual(stateOf(g).scores,[10,2]);
+});

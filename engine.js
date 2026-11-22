@@ -68,7 +68,7 @@ export function finishGame(game,winner,reason='concession',now=Date.now()){
  if(game.status!=='active'||(![0,1].includes(winner)&&!(winner===null&&reason==='interrupted')))throw Error('Choose a winner for an active game.');
  const g=settleClock(game,now);if(g.clock)g.clock.runningSince=null;g.events.push({type:'finish',winner,reason,at:new Date(now).toISOString()});g.status='finished';g.winner=winner;g.reason=reason;g.endedAt=new Date(now).toISOString();return g;
 }
-export function undo(game){const g=structuredClone(game);g.events.pop();g.status='active';g.winner=null;delete g.endedAt;delete g.reason;if(g.clock){g.clock=settleClock(game).clock;g.clock.runningSince=null;}return g;}
+export function undo(game){const g=structuredClone(game);g.events.pop();delete g.rackClearedAt;g.status='active';g.winner=null;delete g.endedAt;delete g.reason;if(g.clock){g.clock=settleClock(game).clock;g.clock.runningSince=null;}return g;}
 export function validateHistory(data){
  if(!data||data.schemaVersion!==VERSION||!Array.isArray(data.games)||data.games.length>10000)throw Error('Unsupported JSON. Use a Straight Pool export (schemaVersion 1).');
  const ids=new Set();

@@ -1,8 +1,8 @@
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261122.13';
-import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.13';
-import {rulesPage,tableDiagram} from './rules.js?v=20261122.13';
-import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.13';
-import {matchHistoryPage} from './history.js?v=20261122.13';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261122.14';
+import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.14';
+import {rulesPage,tableDiagram} from './rules.js?v=20261122.14';
+import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.14';
+import {matchHistoryPage} from './history.js?v=20261122.14';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -58,7 +58,7 @@ async function action(a){
  if(a==='clock'){const g=currentGame();if(g?.status==='active'){put(g.clock?.runningSince!=null?pauseClock(g):resumeClock(g));notify(g.clock?.runningSince!=null?'休息中，計時已暫停。':'繼續比賽，開始計時。');}return;}
  if(a==='export')return exportJSON();if(a==='export-game')return exportJSON([currentGame()]);if(a==='import')return $('#import-file').click();
  if(a==='new'){const g=currentGame();if(g?.status==='active'){notify('請先完成目前比賽；可使用「認輸／判定勝負」。');return;}current=null;location.hash='score';render();}
- if(a==='undo'){const g=currentGame();if(g?.events.length){const revised=undo(g);put(g.clock?.runningSince!=null?resumeClock(revised):revised);notify('已回退上一筆記分、擊球順序與圓點歸屬。');}else notify('尚無可撤銷記錄。');}
+ if(a==='undo'){if(summaryTimeout){clearTimeout(summaryTimeout);summaryTimeout=null;}rackSummaryPending=null;selection=null;const g=currentGame();if(g?.events.length){const revised=undo(g);put(g.clock?.runningSince!=null?resumeClock(revised):revised);notify('已回退上一筆記分、擊球順序與圓點歸屬。');}else notify('尚無可撤銷記錄。');}
  if(a==='finish'){endGameDialog(currentGame(),true);}
  if(a==='link-file'){try{fileHandle=await window.showSaveFilePicker({suggestedName:'straight-pool-history.json',types:[{description:'JSON 比賽備份',accept:{'application/json':['.json']}}]});await save();render();notify('已連結 JSON 檔案。');}catch(e){if(e.name!=='AbortError')notify('無法連結檔案，請使用「匯出全部 JSON」。');}}
 }
@@ -89,8 +89,10 @@ function pickScore(player,balls,end=null){
  if(!unstarted&&stateOf(original).active!==player)return;
  const g=unstarted?selectOpeningPlayer(original,player):original;
  if(g.clock?.runningSince==null){notify('請先按繼續比賽。');return;}
+ const remaining=g.target-stateOf(g).scores[player];
+ if(balls>remaining){notify('此選手只需再得 '+remaining+' 分，請選擇達標球號。');return;}
  const rackEnd=end??balls;
- if(rackEnd===14||rackEnd===15){
+ if(balls===remaining||rackEnd===14||rackEnd===15){
   const outcome=stateOf(g).scores[player]+balls>=g.target?'win':'continue';
   const next=addTurn(g,{balls,outcome,shots:Math.max(1,balls),rackEnd});
   selection=null;put(next);
@@ -102,7 +104,7 @@ function pickScore(player,balls,end=null){
  }
  selection={player,balls,end:end??(balls||0)};render();
  const dialog=$('#modal');dialog.dataset.playerTone=String(player);dialog.innerHTML=scoringDialog(g,balls);dialog.showModal();
- dialog.querySelector('[data-close]').onclick=()=>dialog.close();
+ dialog.querySelector('[data-close]').onclick=()=>{selection=null;dialog.close();render();};
  const shotInput=$('#shot-count');let shotsEdited=false;shotInput.addEventListener('input',()=>shotsEdited=true);
  dialog.querySelectorAll('[data-reason]').forEach(button=>button.onclick=()=>{
   try{
@@ -139,7 +141,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261122.13',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261122.14',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
