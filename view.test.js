@@ -262,3 +262,12 @@ test('breaker label appears only after first confirmed score and follows identit
  for(const swapped of [false,true]){const html=scoreboardPage(g,{swapped});assert.equal((html.match(/class="breaker-label"/g)||[]).length,1);assert.match(html,/<h1>乙<\/h1><span class="breaker-label">（先攻）<\/span>/);}
  g=addTurn(g,{balls:3,outcome:'miss'});assert.match(scoreboardPage(g),/<h1>乙<\/h1><span class="breaker-label">（先攻）/);
 });
+
+test('scoring header underlines the active display side and follows swap and handover',()=>{
+ const initial=createGame(['甲','乙']);assert.doesNotMatch(scoreboardPage(initial),/class="active-scoring-side"/);
+ let g=addTurn(initial,{balls:2,outcome:'miss'});
+ assert.match(scoreboardPage(g),/class="active-scoring-side" aria-current="true">右側記分/);
+ assert.match(scoreboardPage(g,{swapped:true}),/class="active-scoring-side" aria-current="true">左側記分/);
+ g=addTurn(g,{balls:0,outcome:'safety'});assert.match(scoreboardPage(g),/class="active-scoring-side" aria-current="true">左側記分/);
+ assert.doesNotMatch(scoreboardPage(finishGame(g,0)),/class="active-scoring-side"/);
+});

@@ -85,3 +85,5 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 
 .breaker-label{font-size:12px;white-space:nowrap;flex:none;font-weight:500;opacity:.8}
 @media(max-width:540px){.breaker-label{font-size:10px}}
+
+.picker-header .active-scoring-side{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;color:#fff;font-weight:700}
