@@ -214,3 +214,29 @@ test('scoreboard opens current-match statistics and uses only this game for both
  assert.doesNotMatch(scoreboardPage(g),/href="#stats">統計分析/);
  assert.match(matchStats(finishGame(g,0)),/比賽結束 · 唯讀紀錄/);
 });
+
+test('zero-point handovers and negative foul scores do not expand a ten-point picker',()=>{
+ let g=createGame(['甲','乙'],10);
+ const visibleEnds=game=>[...scoreboardPage(game).matchAll(/data-central-end="(\d+)" (?!hidden)/g)].map(m=>Number(m[1]));
+ g=addTurn(g,{balls:0,outcome:'miss'});
+ assert.deepEqual(visibleEnds(g),Array.from({length:11},(_,i)=>i));
+ for(let i=0;i<4;i++){
+  g=addTurn(g,{balls:0,outcome:'foul'});
+  assert.deepEqual(visibleEnds(g),Array.from({length:11},(_,i)=>i));
+  g=addTurn(g,{balls:0,outcome:'safety'});
+  assert.deepEqual(visibleEnds(g),Array.from({length:11},(_,i)=>i));
+ }
+ assert.ok(stateOf(g).scores.some(score=>score<0));
+ g=JSON.parse(JSON.stringify(g));
+ assert.deepEqual(visibleEnds(g),Array.from({length:11},(_,i)=>i));
+});
+test('foul display cap still allows recovery of negative points using cumulative rack positions',()=>{
+ let g=addTurn(createGame(['甲','乙'],10),{balls:0,outcome:'miss'});
+ g=addTurn(g,{balls:0,outcome:'foul'});
+ g=addTurn(g,{balls:0,outcome:'miss'});
+ g=addTurn(g,{balls:10,outcome:'continue',rackEnd:10});
+ assert.equal(stateOf(g).scores[1],9);
+ assert.match(scoreboardPage(g),/data-central-end="11"  aria-label/);
+ g=addTurn(g,{balls:1,outcome:'win',rackEnd:11});
+ assert.equal(g.status,'finished');assert.equal(stateOf(g).scores[1],10);
+});

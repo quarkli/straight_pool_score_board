@@ -1,9 +1,9 @@
-import {bindDeletion} from './deletion.js?v=20261122.22';
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261122.22';
-import {changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.22';
-import {rulesPage,tableDiagram} from './rules.js?v=20261122.22';
-import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.22';
-import {matchHistoryPage} from './history.js?v=20261122.22';
+import {bindDeletion} from './deletion.js?v=20261122.23';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261122.23';
+import {changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.23';
+import {rulesPage,tableDiagram} from './rules.js?v=20261122.23';
+import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.23';
+import {matchHistoryPage} from './history.js?v=20261122.23';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -160,7 +160,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261122.22',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261122.23',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
