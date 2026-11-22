@@ -5,23 +5,25 @@ export function createGame(players,target=100,breaker=0){
  if(players[0].trim().toLowerCase()===players[1].trim().toLowerCase())throw Error('Use different names for the two players.');
  if(!Number.isInteger(target)||target<1||target>10000)throw Error('Target must be a whole number from 1 to 10,000.');
  if(![0,1].includes(breaker))throw Error('Choose a breaker.');
- return {id:crypto.randomUUID(),players:players.map(p=>p.trim()),target,breaker,startedAt:new Date().toISOString(),events:[],status:'active',winner:null};
+ return {id:crypto.randomUUID(),players:players.map(p=>p.trim()),target,breaker,startedAt:new Date().toISOString(),events:[],status:'active',winner:null,clock:{elapsedMs:[0,0],runningSince:Date.now(),startedAt:Date.now()}};
 }
 export function stateOf(game){
- const s={scores:[0,0],fouls:[0,0],active:game.breaker,opening:true,visits:[0,0],runs:[0,0],high:[0,0],balls:[0,0],penalties:[0,0],standard:[0,0],breaking:[0,0],three:[0,0],winner:null,rows:[],visitOpen:false};
+ const s={scores:[0,0],fouls:[0,0],active:game.breaker,opening:true,visits:[0,0],runs:[0,0],high:[0,0],balls:[0,0],penalties:[0,0],standard:[0,0],breaking:[0,0],three:[0,0],winner:null,rows:[],visitOpen:false,warned:[false,false]};
  for(const e of game.events){
   if(e.type==='finish'){s.winner=e.winner;continue;}
-  if(e.type==='stalemate'){s.active=e.breaker;s.opening=true;s.runs=[0,0];s.fouls=[0,0];s.visitOpen=false;continue;}
+  if(e.type==='stalemate'){s.active=e.breaker;s.opening=true;s.runs=[0,0];s.fouls=[0,0];s.warned=[false,false];s.visitOpen=false;continue;}
   const p=s.active;
   if(!s.visitOpen){s.visits[p]++;s.visitOpen=true;}
   const before=s.scores[p]; let penalty=0,third=false;
-  if(e.balls>0){s.fouls[p]=0;s.balls[p]+=e.balls;s.runs[p]+=e.balls;s.high[p]=Math.max(s.high[p],s.runs[p]);}
+  if(e.balls>0){s.fouls[p]=0;s.warned[p]=false;s.balls[p]+=e.balls;s.runs[p]+=e.balls;s.high[p]=Math.max(s.high[p],s.runs[p]);}
   s.scores[p]+=e.balls;
   if(e.outcome==='foul'||e.outcome==='scratch'){
    penalty=1;s.standard[p]++;s.fouls[p]++;
-   if(s.fouls[p]>=3&&e.warned){penalty+=15;third=true;s.three[p]++;s.fouls[p]=0;}else if(s.fouls[p]>=3){s.fouls[p]=2;}
+   if(s.fouls[p]>=3&&(e.warned||s.warned[p])){penalty+=15;third=true;s.three[p]++;s.fouls[p]=0;}else if(s.fouls[p]>=3){s.fouls[p]=2;}
   }else if(e.outcome==='break-foul'){penalty=2;s.breaking[p]++;}
-  else{s.fouls[p]=0;}
+  else{s.fouls[p]=0;s.warned[p]=false;}
+  if(e.warningGiven&&s.fouls[p]===2)s.warned[p]=true;
+  if(third)s.warned[p]=false;
   s.scores[p]-=penalty;s.penalties[p]+=penalty;
   s.rows.push({...e,player:p,visit:s.visits[p],penalty,third,total:s.scores[p],net:s.scores[p]-before});
   if(s.scores[p]>=game.target){s.winner=p;}
@@ -32,11 +34,13 @@ export function stateOf(game){
  }
  return s;
 }
-export function addTurn(game,{balls=0,outcome='miss',warned=false,rebreak=false,note=''}){
+export function addTurn(game,{balls=0,outcome='miss',warned=false,rebreak=false,note='',shots=null,warningGiven=false},now=Date.now()){
  if(game.status!=='active')throw Error('This game is finished.');
  const s=stateOf(game);
  if(s.winner!==null)throw Error('Target already reached.');
  if(!Number.isInteger(balls)||balls<0||balls>10000)throw Error('Enter a whole number of legal balls from 0 to 10,000.');
+ if(shots!==null&&(!Number.isInteger(shots)||shots<1||shots>100000))throw Error('Invalid shot count.');
+ if(game.clock&&game.clock.runningSince===null)throw Error('Resume the match clock first.');
  if(!outcomes.includes(outcome))throw Error('Choose a valid result.');
  if(outcome==='break-foul'&&(!s.opening||balls!==0))throw Error('A breaking foul is only possible on an opening break, with zero scoring balls.');
  if((outcome==='continue'||outcome==='win')&&balls===0)throw Error('Add at least one legally scored ball to continue.');
@@ -44,22 +48,28 @@ export function addTurn(game,{balls=0,outcome='miss',warned=false,rebreak=false,
  if(outcome==='break-foul'&&warned)throw Error('Breaking fouls do not count toward three consecutive fouls.');
  if(s.scores[s.active]+balls>=game.target&&balls>0){outcome='win';warned=false;rebreak=false;}
  // Balls are legal scores BEFORE the final miss/safety/foul, never balls pocketed on a foul shot.
- const g=structuredClone(game);g.events.push({type:'turn',balls,outcome,warned:!!warned,rebreak:!!rebreak,note:String(note).slice(0,250),at:new Date().toISOString()});
+ const g=settleClock(game,now);
+ const previousTime=s.rows.reduce((n,r)=>n+(r.player===s.active?(r.elapsedMs||0):0),0);
+ const elapsedMs=g.clock?Math.max(0,g.clock.elapsedMs[s.active]-previousTime):null;
+ g.events.push({type:'turn',balls,outcome,warned:!!warned,rebreak:!!rebreak,note:String(note).slice(0,250),shots,warningGiven:!!warningGiven,elapsedMs,at:new Date(now).toISOString()});
  const next=stateOf(g);if(next.winner!==null){g.status='finished';g.winner=next.winner;g.endedAt=new Date().toISOString();g.reason='target';}
+ if(g.clock)g.clock.runningSince=g.status==='active'?now:null;
  return g;
 }
-export function finishGame(game,winner,reason='concession'){
+export function finishGame(game,winner,reason='concession',now=Date.now()){
  if(game.status!=='active'||![0,1].includes(winner))throw Error('Choose a winner for an active game.');
- const g=structuredClone(game);g.events.push({type:'finish',winner,reason,at:new Date().toISOString()});g.status='finished';g.winner=winner;g.reason=reason;g.endedAt=new Date().toISOString();return g;
+ const g=settleClock(game,now);if(g.clock)g.clock.runningSince=null;g.events.push({type:'finish',winner,reason,at:new Date().toISOString()});g.status='finished';g.winner=winner;g.reason=reason;g.endedAt=new Date().toISOString();return g;
 }
-export function undo(game){const g=structuredClone(game);g.events.pop();g.status='active';g.winner=null;delete g.endedAt;delete g.reason;return g;}
+export function undo(game){const g=structuredClone(game);g.events.pop();g.status='active';g.winner=null;delete g.endedAt;delete g.reason;if(g.clock){g.clock=settleClock(game).clock;g.clock.runningSince=null;}return g;}
 export function validateHistory(data){
  if(!data||data.schemaVersion!==VERSION||!Array.isArray(data.games)||data.games.length>10000)throw Error('Unsupported JSON. Use a Straight Pool export (schemaVersion 1).');
  const ids=new Set();
  for(const g of data.games){
   createGame(g.players,g.target,g.breaker);
   if(typeof g.id!=='string'||g.id.length>100||ids.has(g.id)||!Array.isArray(g.events)||g.events.length>100000||!['active','finished'].includes(g.status)||!Number.isFinite(Date.parse(g.startedAt)))throw Error('Invalid game record.');
-  ids.add(g.id);let replay={...g,status:'active',winner:null,events:[]};
+  if(g.clock&&(!Array.isArray(g.clock.elapsedMs)||g.clock.elapsedMs.length!==2||g.clock.elapsedMs.some(t=>!Number.isFinite(t)||t<0)||(g.clock.runningSince!==null&&(!Number.isFinite(g.clock.runningSince)||g.clock.runningSince<0))))throw Error('Invalid clock.');
+  if(g.events.some(e=>(e.elapsedMs!=null&&(!Number.isFinite(e.elapsedMs)||e.elapsedMs<0))||(e.shots!=null&&(!Number.isInteger(e.shots)||e.shots<1||e.shots>100000))))throw Error('Invalid timing or shot count.');
+  ids.add(g.id);let replay={...g,clock:undefined,status:'active',winner:null,events:[]};
   for(const e of g.events){
    if(!e||!['turn','finish','stalemate'].includes(e.type))throw Error('Invalid game event.');
    if(e.type==='turn')replay=addTurn(replay,e);
@@ -70,8 +80,101 @@ export function validateHistory(data){
  }
  return data.games;
 }
+// Persist only elapsed totals and one wall-clock anchor; rendering never mutates time.
+export function clockTotals(game,now=Date.now()){
+ if(!game.clock)return null;
+ const totals=[...game.clock.elapsedMs];
+ if(game.status==='active'&&game.clock.runningSince!==null){
+  totals[stateOf(game).active]+=Math.max(0,now-game.clock.runningSince);
+ }
+ return totals;
+}
+export function settleClock(game,now=Date.now()){
+ const g=structuredClone(game);
+ if(g.clock){g.clock.elapsedMs=clockTotals(game,now);g.clock.runningSince=game.status==='active'&&game.clock.runningSince!==null?now:null;}
+ return g;
+}
+export function pauseClock(game,now=Date.now()){
+ const g=settleClock(game,now);if(g.clock)g.clock.runningSince=null;return g;
+}
+export function resumeClock(game,now=Date.now()){
+ const g=structuredClone(game);if(g.status!=='active')return g;
+ if(!g.clock)g.clock={elapsedMs:[0,0],runningSince:null,startedAt:now,partial:game.events.length>0};
+ if(g.clock.runningSince===null)g.clock.runningSince=now;
+ return g;
+}
+export function visitRecords(game,player){
+ const groups=[];
+ for(const row of stateOf(game).rows.filter(r=>r.player===player)){
+  let v=groups.at(-1);
+  if(!v||v.visit!==row.visit){v={visit:row.visit,rows:[],points:0,misses:0,shots:0,shotsKnown:true,elapsedMs:0,timeKnown:true};groups.push(v);}
+  v.rows.push(row);v.points+=row.net;v.misses+=row.outcome==='miss'?1:0;
+  if(row.shots==null)v.shotsKnown=false;else v.shots+=row.shots;
+  if(row.elapsedMs==null)v.timeKnown=false;else v.elapsedMs+=row.elapsedMs;
+ }
+ return groups;
+}
+// Derive statistics from the event log; existing version-1 JSON needs no migration.
+export function tacticalStats(game){
+ const result=[0,1].map(()=>({misses:0,safeties:0,completedVisits:0,zeroVisits:0,
+  safetyEvaluated:0,safetyScoredAgainst:0,safetyBallsAgainst:0,safetyHeld:0,safetyOpponentFouls:0}));
+ const scoringRows=stateOf(game).rows;
+ let segment=0,rowIndex=0;const rows=[];
+ for(const e of game.events){
+  if(e.type==='stalemate')segment++;
+  if(e.type==='turn')rows.push({...scoringRows[rowIndex++],segment});
+ }
+ const visits=[];
+ for(const r of rows){
+  let v=visits.at(-1);
+  if(!v||v.player!==r.player||v.visit!==r.visit||v.segment!==r.segment){v={player:r.player,visit:r.visit,segment:r.segment,balls:0,last:r};visits.push(v);}
+  v.balls+=r.balls;v.last=r;
+ }
+ const completed=v=>v.last.outcome!=='continue'||v.last.total>=game.target;
+ for(let i=0;i<visits.length;i++){
+  const v=visits[i],a=result[v.player];
+  if(completed(v)){
+   a.completedVisits++;
+   if(v.balls===0)a.zeroVisits++;
+   if(v.last.outcome==='miss')a.misses++;
+   if(v.last.outcome==='safety'){
+    a.safeties++;
+    const next=visits[i+1];
+    // No result until the opponent's WHOLE immediately following visit ends.
+    if(next&&next.player!==v.player&&next.segment===v.segment&&completed(next)){
+     a.safetyEvaluated++;
+     a.safetyBallsAgainst+=next.balls;
+     if(next.balls>0)a.safetyScoredAgainst++;else a.safetyHeld++;
+     if(['foul','scratch','break-foul'].includes(next.last.outcome))a.safetyOpponentFouls++;
+    }
+   }
+  }
+ }
+ return result;
+}
 export function playerStats(games){
  const map=new Map();
- for(const g of games.filter(g=>g.status==='finished')){const s=stateOf(g);g.players.forEach((name,p)=>{const key=name.trim().toLocaleLowerCase();const a=map.get(key)||{name,games:0,wins:0,points:0,balls:0,visits:0,high:0,fouls:0,penalties:0};a.games++;a.wins+=g.winner===p?1:0;a.points+=s.scores[p];a.balls+=s.balls[p];a.visits+=s.visits[p];a.high=Math.max(a.high,s.high[p]);a.fouls+=s.standard[p]+s.breaking[p];a.penalties+=s.penalties[p];map.set(key,a);});}
+ for(const g of games.filter(g=>g.status==='finished')){
+  const s=stateOf(g),tactics=tacticalStats(g);
+  g.players.forEach((name,p)=>{
+   const key=name.trim().toLocaleLowerCase();
+   const a=map.get(key)||{name,games:0,wins:0,points:0,balls:0,visits:0,high:0,fouls:0,penalties:0,
+    misses:0,safeties:0,completedVisits:0,zeroVisits:0,safetyEvaluated:0,
+    safetyScoredAgainst:0,safetyBallsAgainst:0,safetyHeld:0,safetyOpponentFouls:0,
+    timedGames:0,timeMs:0,timedVisits:0,visitTimeMs:0,timedShots:0,shotTimeMs:0,recordedShots:0,shotPoints:0,shotMisses:0};
+   a.games++;a.wins+=g.winner===p?1:0;a.points+=s.scores[p];a.balls+=s.balls[p];
+   a.visits+=s.visits[p];a.high=Math.max(a.high,s.high[p]);
+   a.fouls+=s.standard[p]+s.breaking[p];a.penalties+=s.penalties[p];
+   for(const [metric,value] of Object.entries(tactics[p]))a[metric]+=value;
+   if(g.clock&&!g.clock.partial){a.timedGames++;a.timeMs+=g.clock.elapsedMs[p];}
+   for(const r of s.rows.filter(r=>r.player===p&&r.shots!=null)){a.recordedShots+=r.shots;a.shotPoints+=r.net;a.shotMisses+=r.outcome==='miss'?1:0;}
+   for(const v of visitRecords(g,p)){
+    const last=v.rows.at(-1);
+    if(v.timeKnown&&(last.outcome!=='continue'||last.total>=g.target)){a.timedVisits++;a.visitTimeMs+=v.elapsedMs;}
+    if(v.timeKnown&&v.shotsKnown){a.timedShots+=v.shots;a.shotTimeMs+=v.elapsedMs;}
+   }
+   map.set(key,a);
+  });
+ }
  return [...map.values()].sort((a,b)=>b.wins-a.wins||b.balls-a.balls);
 }
