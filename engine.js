@@ -7,6 +7,13 @@ export function createGame(players,target=100,breaker=0){
  if(![0,1].includes(breaker))throw Error('Choose a breaker.');
  return {id:crypto.randomUUID(),players:players.map(p=>p.trim()),target,breaker,startedAt:new Date().toISOString(),events:[],status:'active',winner:null,clock:{elapsedMs:[0,0],runningSince:Date.now(),startedAt:Date.now()}};
 }
+export function selectOpeningPlayer(game,player){
+ if(![0,1].includes(player))throw Error('Choose a breaker.');
+ if(game.status!=='active'||game.events.some(e=>e.type==='turn'))return structuredClone(game);
+ const g=structuredClone(game);g.breaker=player;
+ if(g.clock){const banked=g.clock.elapsedMs[0]+g.clock.elapsedMs[1];g.clock.elapsedMs=[0,0];g.clock.elapsedMs[player]=banked;}
+ return g;
+}
 export function stateOf(game){
  const s={scores:[0,0],fouls:[0,0],active:game.breaker,opening:true,visits:[0,0],runs:[0,0],high:[0,0],balls:[0,0],penalties:[0,0],standard:[0,0],breaking:[0,0],three:[0,0],winner:null,rows:[],visitOpen:false,warned:[false,false]};
  for(const e of game.events){

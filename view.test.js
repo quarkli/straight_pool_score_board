@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {createGame,addTurn,finishGame,pauseClock,playerStats} from './engine.js';
-import {scoreboardPage,scoringDialog,duration} from './scoreboard.js';
+import {createGame,addTurn,finishGame,pauseClock,playerStats,selectOpeningPlayer,stateOf} from './engine.js';
+import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js';
 import {filterHistory,matchHistoryPage,localDate} from './history.js';
 test('board has 16 aligned ball rows and two independent scrollable history regions',()=>{
  const g=createGame(['甲','乙']);const html=scoreboardPage(g);
@@ -52,4 +52,31 @@ test('ten reproducible demo matches all finish at target 70 with valid clock and
  for(const g of games){assert.equal(g.demo,true);assert.equal(g.target,70);assert.equal(g.status,'finished');assert.equal(stateOf(g).scores[g.winner],70);assert.ok(Date.parse(g.endedAt)>Date.parse(g.startedAt));assert.ok(g.clock.elapsedMs.every(t=>t>0));assert.ok(g.events.every(e=>e.shots>=1));}
  assert.ok(games.some(g=>stateOf(g).three.some(n=>n>0)));
  assert.ok(games.some(g=>stateOf(g).breaking.some(n=>n>0)));
+});
+
+test('before first recorded turn both sides can score; after handoff inactive buttons are hidden',()=>{
+ const fresh=createGame(['甲','乙']);const initial=scoreboardPage(fresh);
+ assert.equal((initial.match(/data-pick="\d+"[^>]*disabled/g)||[]).length,0);
+ assert.equal((initial.match(/data-pick="\d+"[^>]*hidden/g)||[]).length,0);
+ const g=addTurn(fresh,{balls:5,outcome:'miss',shots:6});const after=scoreboardPage(g);
+ assert.equal((after.match(/data-pick="\d+"[^>]*hidden/g)||[]).length,16);
+});
+test('first scorer becomes breaker with all opening elapsed time and cannot change after start',()=>{
+ let g=createGame(['甲','乙']);g.clock.elapsedMs=[4000,0];g.clock.runningSince=1000;
+ g=selectOpeningPlayer(g,1);assert.equal(g.breaker,1);assert.deepEqual(g.clock.elapsedMs,[0,4000]);
+ g=addTurn(g,{balls:5,outcome:'safety',shots:6},6000);
+ assert.equal(stateOf(g).rows[0].player,1);assert.equal(stateOf(g).active,0);
+ assert.deepEqual(g.clock.elapsedMs,[0,9000]);assert.equal(selectOpeningPlayer(g,0).breaker,1);
+});
+test('14/15 scoring entries and cumulative visit thresholds have summaries, ordinary scores do not',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:10,outcome:'continue',shots:10});assert.equal(inningSummary(g),'');
+ g=addTurn(g,{balls:4,outcome:'continue',shots:4});assert.match(inningSummary(g),/5 秒後自動關閉/);
+ g=addTurn(g,{balls:1,outcome:'miss',shots:2});assert.match(inningSummary(g),/15/);
+ const other=addTurn(createGame(['甲','乙']),{balls:15,outcome:'safety',shots:16});assert.match(inningSummary(other),/顆合法進球/);
+});
+
+test('score buttons contain white dots without visible numbers',()=>{
+ const html=scoreboardPage(createGame(['甲','乙']));
+ assert.equal((html.match(/class="option-dot"/g)||[]).length,32);
+ assert.ok(!html.includes('<span>分</span></button>'));
 });
