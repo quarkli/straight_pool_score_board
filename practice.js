@@ -1,4 +1,4 @@
-import {duration,ball} from './scoreboard.js?v=20261122.14';
+import {duration,ball} from './scoreboard.js?v=20261122.15';
 const KEY='straight-pool-practice-v1',NAME='straight-pool-practice-name';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function practiceMetrics(session){

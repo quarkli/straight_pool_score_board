@@ -34,14 +34,14 @@ export function stateOf(game){
   s.scores[p]-=penalty;s.penalties[p]+=penalty;
   s.rows.push({...e,player:p,visit:s.visits[p],penalty,third,total:s.scores[p],net:s.scores[p]-before});
   if(s.scores[p]>=game.target){s.winner=p;}
-  if(third){s.active=p;s.opening=true;s.runs[p]=0;s.visitOpen=false;}
+  if(third){s.active=e.thirdChoice==='continue'?1-p:p;s.opening=e.thirdChoice!=='continue';s.runs[p]=0;s.visitOpen=false;}
   else if(e.outcome==='break-foul'&&e.rebreak){s.active=p;s.opening=true;s.runs[p]=0;s.visitOpen=false;}
   else if(e.outcome==='continue'||e.outcome==='win'){s.opening=false;}
   else{s.active=1-p;s.opening=false;s.runs[p]=0;s.visitOpen=false;}
  }
  return s;
 }
-export function addTurn(game,{balls=0,outcome='miss',warned=false,rebreak=false,note='',shots=null,warningGiven=false,rackEnd=null},now=Date.now()){
+export function addTurn(game,{balls=0,outcome='miss',warned=false,rebreak=false,note='',shots=null,warningGiven=false,rackEnd=null,thirdChoice='rerack'},now=Date.now()){
  if(game.status!=='active')throw Error('This game is finished.');
  const s=stateOf(game);
  if(s.winner!==null)throw Error('Target already reached.');
@@ -49,6 +49,7 @@ export function addTurn(game,{balls=0,outcome='miss',warned=false,rebreak=false,
  if(rackEnd!==null&&(!Number.isInteger(rackEnd)||rackEnd<1||rackEnd>15||balls<1))throw Error('Invalid rack endpoint.');
  if(shots!==null&&(!Number.isInteger(shots)||shots<1||shots>100000))throw Error('Invalid shot count.');
  if(game.clock&&game.clock.runningSince===null)throw Error('Resume the match clock first.');
+ if(!['rerack','continue'].includes(thirdChoice))throw Error('Invalid three-foul choice.');
  if(!outcomes.includes(outcome))throw Error('Choose a valid result.');
  if(outcome==='break-foul'&&(!s.opening||balls!==0))throw Error('A breaking foul is only possible on an opening break, with zero scoring balls.');
  if((outcome==='continue'||outcome==='win')&&balls===0)throw Error('Add at least one legally scored ball to continue.');
@@ -59,7 +60,7 @@ export function addTurn(game,{balls=0,outcome='miss',warned=false,rebreak=false,
  const g=settleClock(game,now);
  const previousTime=s.rows.reduce((n,r)=>n+(r.player===s.active?(r.elapsedMs||0):0),0);
  const elapsedMs=g.clock?Math.max(0,g.clock.elapsedMs[s.active]-previousTime):null;
- g.events.push({type:'turn',balls,outcome,warned:!!warned,rebreak:!!rebreak,note:String(note).slice(0,250),shots,rackEnd,warningGiven:!!warningGiven,elapsedMs,at:new Date(now).toISOString()});
+ g.events.push({type:'turn',balls,outcome,warned:!!warned,rebreak:!!rebreak,note:String(note).slice(0,250),shots,rackEnd,thirdChoice,warningGiven:!!warningGiven,elapsedMs,at:new Date(now).toISOString()});
  const next=stateOf(g);if(next.winner!==null){g.status='finished';g.winner=next.winner;g.endedAt=new Date(now).toISOString();g.reason='target';}
  if(g.clock)g.clock.runningSince=g.status==='active'?now:null;
  return g;
@@ -116,7 +117,7 @@ export function rackState(game,{forInput=false}={}){
  const reset=()=>{owners=Array(16).fill(null);count=0;number++;complete=false;rows=[];};
  for(const r of stateOf(game).rows){
   if(complete)reset();
-  if(r.third||(r.outcome==='break-foul'&&r.rebreak)){reset();continue;}
+  if((r.third&&r.thirdChoice!=='continue')||(r.outcome==='break-foul'&&r.rebreak)){reset();continue;}
   const limit=r.rackEnd===15||(!r.rackEnd&&r.balls===15&&count===0)?15:14;
   for(let i=0;i<r.balls;i++){
    if(count>=limit)reset();

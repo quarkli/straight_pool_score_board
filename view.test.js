@@ -178,3 +178,11 @@ test('winning score finishes midrack with stopped clock and correct totals',()=>
  g=addTurn(g,{balls:2,outcome:'miss',rackEnd:5});g=addTurn(g,{balls:7,outcome:'win',rackEnd:12});
  assert.equal(g.status,'finished');assert.equal(g.winner,0);assert.equal(g.clock.runningSince,null);assert.deepEqual(stateOf(g).scores,[10,2]);
 });
+test('three-foul continuation resets count but preserves rack and transfers shooter, including JSON replay',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss',rackEnd:3});
+ for(let i=0;i<3;i++){
+  g=addTurn(g,{balls:0,outcome:'foul',warned:i===2,thirdChoice:i===2?'continue':'rerack'});
+  if(i<2)g=addTurn(g,{balls:0,outcome:'miss'});
+ }
+ const s=stateOf(g);assert.equal(s.active,0);assert.equal(s.opening,false);assert.equal(s.fouls[1],0);assert.equal(s.scores[1],-18);assert.equal(rackState(g).count,3);assert.equal(rackState(g).owners[1],0);
+});

@@ -1,8 +1,8 @@
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261122.14';
-import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.14';
-import {rulesPage,tableDiagram} from './rules.js?v=20261122.14';
-import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.14';
-import {matchHistoryPage} from './history.js?v=20261122.14';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261122.15';
+import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.15';
+import {rulesPage,tableDiagram} from './rules.js?v=20261122.15';
+import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.15';
+import {matchHistoryPage} from './history.js?v=20261122.15';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -117,7 +117,11 @@ function pickScore(player,balls,end=null){
    else if(row.outcome==='break-foul'){
     modal(`<h2>開球犯規，已扣 2 分</h2><p>對手可接收現況，或要求原開球者重新開球。</p><div class="actions"><button class="btn" id="accept-break">接收現況</button><button class="btn primary" id="retry-break">要求重新開球</button></div>`);
     $('#accept-break').onclick=()=>$('#modal').close();$('#retry-break').onclick=()=>{const revised=structuredClone(currentGame());revised.events.at(-1).rebreak=true;$('#modal').close();put(revised);};
-   }else if(row.third){modal(`<div class="warning-count">−16</div><h2>第三次連續犯規</h2><p class="warning-message">一般犯規扣 1 分，再追加扣 15 分。<br>連犯歸零、重排 15 顆，由犯規者重新開球。</p><button class="btn primary big-action" id="third-ok">確認，重新開球</button>`);$('#third-ok').onclick=()=>$('#modal').close();}
+   }else if(row.third){
+    modal(`<div class="warning-count">−16</div><h2>第三次連續犯規</h2><p class="warning-message">一般犯規扣 1 分，再追加扣 15 分，犯規計數已歸零。<br>請由對手選擇後續處理（日本 NBA 規則）。</p><div class="actions"><button class="btn primary" id="third-rerack">重新排球</button><button class="btn" id="third-continue">繼續擊打</button></div><p class="note">重新排球：重排 15 顆，由犯規者重新開球。<br>繼續擊打：保留現況，由對手接手；洗袋時依規定取得頭線後手中球。</p>`);
+    const choose=choice=>{const revised=structuredClone(currentGame());revised.events.at(-1).thirdChoice=choice;delete revised.rackClearedAt;$('#modal').close();put(revised);};
+    $('#third-rerack').onclick=()=>choose('rerack');$('#third-continue').onclick=()=>choose('continue');
+   }
    else if(stateOf(next).fouls[player]===2&&!stateOf(next).warned[player]){
     modal(`<div class="warning-count">連犯 2 次</div><h2>請口頭提醒 ${esc(next.players[player])}</h2><p class="warning-message">下一次連續一般犯規將自動扣 1＋15 分。<br>必須在其下一桿之前告知球員。</p><button class="btn primary big-action" id="ack-warning">已口頭告知球員</button>`);
     $('#ack-warning').onclick=()=>{const revised=structuredClone(currentGame());revised.events.at(-1).warningGiven=true;$('#modal').close();put(revised);};
@@ -141,7 +145,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261122.14',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261122.15',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
