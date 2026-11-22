@@ -52,13 +52,13 @@ export function addTurn(game,{balls=0,outcome='miss',warned=false,rebreak=false,
  const previousTime=s.rows.reduce((n,r)=>n+(r.player===s.active?(r.elapsedMs||0):0),0);
  const elapsedMs=g.clock?Math.max(0,g.clock.elapsedMs[s.active]-previousTime):null;
  g.events.push({type:'turn',balls,outcome,warned:!!warned,rebreak:!!rebreak,note:String(note).slice(0,250),shots,warningGiven:!!warningGiven,elapsedMs,at:new Date(now).toISOString()});
- const next=stateOf(g);if(next.winner!==null){g.status='finished';g.winner=next.winner;g.endedAt=new Date().toISOString();g.reason='target';}
+ const next=stateOf(g);if(next.winner!==null){g.status='finished';g.winner=next.winner;g.endedAt=new Date(now).toISOString();g.reason='target';}
  if(g.clock)g.clock.runningSince=g.status==='active'?now:null;
  return g;
 }
 export function finishGame(game,winner,reason='concession',now=Date.now()){
  if(game.status!=='active'||![0,1].includes(winner))throw Error('Choose a winner for an active game.');
- const g=settleClock(game,now);if(g.clock)g.clock.runningSince=null;g.events.push({type:'finish',winner,reason,at:new Date().toISOString()});g.status='finished';g.winner=winner;g.reason=reason;g.endedAt=new Date().toISOString();return g;
+ const g=settleClock(game,now);if(g.clock)g.clock.runningSince=null;g.events.push({type:'finish',winner,reason,at:new Date(now).toISOString()});g.status='finished';g.winner=winner;g.reason=reason;g.endedAt=new Date(now).toISOString();return g;
 }
 export function undo(game){const g=structuredClone(game);g.events.pop();g.status='active';g.winner=null;delete g.endedAt;delete g.reason;if(g.clock){g.clock=settleClock(game).clock;g.clock.runningSince=null;}return g;}
 export function validateHistory(data){

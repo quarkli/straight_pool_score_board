@@ -48,6 +48,7 @@ function bind(){
  document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{current=b.dataset.view;location.hash='score';render();});document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>exportJSON([games.find(g=>g.id===b.dataset.export)]));
 }
 async function action(a){
+ if(a==='load-demo'){await loadDemo();return;}
  if(a==='history-reset'){historyFilters={from:'',to:'',player:'',opponent:''};render();return;}
  if(a==='fullscreen'){try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{notify('此瀏覽器不支援全螢幕；記分板仍會自動配合視窗大小。');}return;}
  if(a==='swap'){swapped=!swapped;localStorage.setItem('straight-pool-swap',String(swapped));render();return;}
@@ -92,3 +93,14 @@ setInterval(updateClocks,1000);
 function translateError(s){return ({'Resume the match clock first.':'請先按繼續比賽，再記錄得分。','Invalid shot count.':'出手次數須為 1–100,000 的整數。','Enter two names (1–40 characters).':'請輸入兩位球員的姓名（1–40 字）。','Use different names for the two players.':'兩位球員請使用不同姓名。','Target must be a whole number from 1 to 10,000.':'目標分數須為 1–10,000 的整數。','Add at least one legally scored ball to continue.':'繼續此局前，請輸入至少一顆合法進球。','The target has not been reached.':'尚未達到目標分數，請選擇其他結束方式。','A breaking foul is only possible on an opening break, with zero scoring balls.':'開球失誤僅適用於開球，合法進球數須為 0。','Enter a whole number of legal balls from 0 to 10,000.':'合法進球數須為 0–10,000 的整數。'})[s]||'資料無效，請檢查輸入或 JSON 格式。';}
 $('#import-file').addEventListener('change',async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{if(file.size>20*1024*1024)throw Error('檔案過大');const imported=validateHistory(JSON.parse(await file.text()));let added=0,conflict=0;for(const g of imported){const old=games.find(x=>x.id===g.id);if(!old){if(g.status==='active'&&games.some(x=>x.status==='active')){conflict++;continue;}games.push(g);added++;}else if(JSON.stringify(old)!==JSON.stringify(g))conflict++;}await save();current=games.find(g=>g.status==='active')?.id||current;render();notify(`已匯入 ${added} 場。${conflict?`${conflict} 場重複 ID 或進行中比賽衝突，保留現有紀錄。`:''}`);}catch{notify('無法匯入：請選擇本程式匯出的有效 JSON（上限 20 MB）。');}});
 window.addEventListener('hashchange',render);window.addEventListener('storage',e=>{if(e.key===KEY){notify('另一個分頁已更新資料，請重新整理後繼續。');document.querySelectorAll('#turn-form button,#setup-form button').forEach(b=>b.disabled=true);}});render();
+
+async function loadDemo(){
+ try{
+  const response=await fetch(new URL('./demo-games.json',import.meta.url));
+  if(!response.ok)throw Error('demo fetch');
+  const incoming=validateHistory(await response.json());let count=0;
+  for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
+  await save();render();notify(count?`已加入 ${count} 場模擬對局（目標 70 分），既有紀錄已保留。`:'10 場模擬對局已存在，未重複加入。');
+ }catch{notify('無法載入模擬對局，請重新整理後再試。');}
+}
+if(new URLSearchParams(location.search).get('demo')==='1')loadDemo();

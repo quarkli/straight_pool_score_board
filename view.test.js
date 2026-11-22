@@ -44,3 +44,12 @@ test('per-shot scoring and miss rate use recorded shots, not scoring-entry count
 test('duration formats unknown time separately from zero and supports hours',()=>{
  assert.equal(duration(null),'未記錄');assert.equal(duration(0),'00:00:00');assert.equal(duration(3661000),'01:01:01');
 });
+
+test('ten reproducible demo matches all finish at target 70 with valid clock and shot statistics',async()=>{
+ const {readFile}=await import('node:fs/promises');const {validateHistory,stateOf}=await import('./engine.js');
+ const data=JSON.parse(await readFile(new URL('./demo-games.json',import.meta.url),'utf8'));
+ const games=validateHistory(data);assert.equal(games.length,10);assert.equal(new Set(games.map(g=>g.id)).size,10);
+ for(const g of games){assert.equal(g.demo,true);assert.equal(g.target,70);assert.equal(g.status,'finished');assert.equal(stateOf(g).scores[g.winner],70);assert.ok(Date.parse(g.endedAt)>Date.parse(g.startedAt));assert.ok(g.clock.elapsedMs.every(t=>t>0));assert.ok(g.events.every(e=>e.shots>=1));}
+ assert.ok(games.some(g=>stateOf(g).three.some(n=>n>0)));
+ assert.ok(games.some(g=>stateOf(g).breaking.some(n=>n>0)));
+});
