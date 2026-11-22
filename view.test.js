@@ -12,7 +12,7 @@ test('board has 16 aligned ball rows and two independent scrollable history regi
 test('swap changes display order, never player identity, turn or score',()=>{
  const g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'miss',shots:6});const original=JSON.stringify(g);
  const html=scoreboardPage(g,{swapped:true});assert.ok(html.indexOf('<h1>乙</h1>')<html.indexOf('<h1>甲</h1>'));
- assert.equal(JSON.stringify(g),original);assert.match(html,/\(5／1／6\)/);
+ assert.equal(JSON.stringify(g),original);assert.match(html,/\(5／1\)/);
 });
 test('picking five highlights exactly five options on the selected side',()=>{
  const html=scoreboardPage(createGame(['甲','乙']),{selection:{player:0,balls:5}});
@@ -22,7 +22,7 @@ test('paused board disables scoring, dialog exposes opening penalty and optional
  const g=pauseClock(createGame(['甲','乙']));const html=scoreboardPage(g);
  assert.equal((html.match(/data-pick="\d+"[^>]*disabled/g)||[]).length,32);
  assert.match(scoringDialog(g,0),/data-reason="break-foul"/);
- assert.match(scoringDialog(g,5),/id="shot-count"/);
+ assert.doesNotMatch(scoringDialog(g,5),/id="shot-count"/);
 });
 test('history defaults to all records and filters local date plus both player names',()=>{
  const a=createGame(['甲','乙']),b=createGame(['甲','丙']);a.startedAt='2026-11-20T12:00:00Z';b.startedAt='2026-11-22T12:00:00Z';
@@ -34,12 +34,12 @@ test('history defaults to all records and filters local date plus both player na
 test('box score puts actual opening player first even when player two broke',()=>{
  const g=createGame(['甲','乙'],100,1);const html=matchHistoryPage([g]);
  assert.ok(html.indexOf('<strong>乙</strong>')<html.indexOf('<strong>甲</strong>'));
- for(const text of ['有效用時','平均出手得分','平均出手用時','失誤率'])assert.ok(html.includes(text));
+ for(const text of ['有效用時','出場數','平均／出場','選手用時'])assert.ok(html.includes(text));
 });
 test('per-shot scoring and miss rate use recorded shots, not scoring-entry count',()=>{
  let g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'miss',shots:6});g=finishGame(g,0);
  const p=playerStats([g]).find(p=>p.name==='甲');assert.equal(p.recordedShots,6);assert.equal(p.shotPoints,5);assert.equal(p.shotMisses,1);
- const html=matchHistoryPage([g]);assert.match(html,/0\.83/);assert.match(html,/16\.7%/);
+ const html=matchHistoryPage([g]);assert.doesNotMatch(html,/平均出手|失誤率|<th>出手<\/th>/);
 });
 test('duration formats unknown time separately from zero and supports hours',()=>{
  assert.equal(duration(null),'未記錄');assert.equal(duration(0),'00:00:00');assert.equal(duration(3661000),'01:01:01');
@@ -185,4 +185,11 @@ test('three-foul continuation resets count but preserves rack and transfers shoo
   if(i<2)g=addTurn(g,{balls:0,outcome:'miss'});
  }
  const s=stateOf(g);assert.equal(s.active,0);assert.equal(s.opening,false);assert.equal(s.fouls[1],0);assert.equal(s.scores[1],-18);assert.equal(rackState(g).count,3);assert.equal(rackState(g).owners[1],0);
+});
+test('history and scoring show appearances without any per-shot statistics or inputs',()=>{
+ const g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss',shots:4});
+ const history=matchHistoryPage([g]);assert.match(history,/<th>出場數<\/th>/);assert.match(history,/<th>平均／出場<\/th>/);
+ assert.doesNotMatch(history,/<th>[^<]*(?:出手|失誤率|局數)/);
+ const board=scoreboardPage(g);assert.match(board,/第 1 次出場/);assert.doesNotMatch(board,/次出手|得分／失誤／出手/);
+ assert.doesNotMatch(scoringDialog(g,3),/shot-count|出手次數/);
 });
