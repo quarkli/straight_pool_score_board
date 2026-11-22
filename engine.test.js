@@ -9,7 +9,7 @@ test('legal miss or safety resets own foul sequence',()=>{let g=turn(start(),0,'
 test('legal balls before final foul reset streak before applying foul',()=>{let g=turn(start(),0,'foul');g=turn(g,0);g=turn(g,5,'foul');assert.equal(stateOf(g).fouls[0],1);assert.equal(stateOf(g).scores[0],3);});
 test('opening foul is two points and can force same player to rebreak',()=>{let g=turn(start(),0,'break-foul',{rebreak:true});assert.equal(stateOf(g).active,0);assert.equal(stateOf(g).fouls[0],0);g=turn(g,0,'break-foul');assert.equal(stateOf(g).scores[0],-4);assert.equal(stateOf(g).active,1);});
 test('cannot apply break penalty during regular play',()=>assert.throws(()=>turn(turn(start(),0),0,'break-foul')));
-test('target automatically completes game, undo restores it',()=>{let g=turn(start(10),10,'continue');assert.equal(g.status,'finished');assert.equal(g.winner,0);assert.throws(()=>turn(g,1));g=undo(g);assert.equal(g.status,'active');assert.equal(stateOf(g).scores[0],0);});
+test('completed games are finalized and cannot be undone',()=>{const g=turn(start(10),10,'continue');assert.equal(g.status,'finished');assert.equal(g.finalized,true);assert.equal(g.winner,0);assert.throws(()=>turn(g,1));assert.throws(()=>undo(g),/read-only/);});
 test('negative scoring does not prematurely win',()=>{let g=turn(start(5),0,'foul');g=turn(g,0);g=turn(g,5);assert.equal(g.status,'active');assert.equal(stateOf(g).scores[0],4);});
 test('concession and valid round trip JSON export',()=>{let g=finishGame(turn(start(),6),1);assert.equal(g.winner,1);assert.deepEqual(validateHistory({schemaVersion:1,games:[g]}),[g]);});
 test('reject tampered winner, invalid numeric values, duplicate IDs',()=>{const g=turn(start(5),5);assert.throws(()=>validateHistory({schemaVersion:1,games:[{...g,winner:1}]}));assert.throws(()=>turn(start(),NaN));assert.throws(()=>turn(start(),-1));assert.throws(()=>createGame(['a','A']));assert.throws(()=>validateHistory({schemaVersion:1,games:[g,g]}));});
@@ -119,4 +119,9 @@ test('invalid shot counts rejected and new summaries distinguish legacy unknowns
  assert.throws(()=>addTurn(start(),{balls:5,outcome:'miss',shots:0}));
  const g=addTurn(start(),{balls:5,outcome:'miss',shots:6});
  assert.equal(visitRecords(g,0)[0].shots,6);assert.equal(visitRecords(g,0)[0].misses,1);
+});
+test('finished JSON round trips preserve read-only results, including legacy records',()=>{
+ let g=finishGame(turn(start(),3),0);delete g.finalized;
+ const [loaded]=validateHistory(JSON.parse(JSON.stringify({schemaVersion:1,games:[g]})));
+ assert.equal(loaded.finalized,true);assert.equal(loaded.status,'finished');assert.throws(()=>undo(loaded),/read-only/);assert.throws(()=>turn(loaded,1));
 });

@@ -199,3 +199,10 @@ test('history supports per-record and filtered bulk deletion controls',()=>{
  assert.equal((html.match(/data-delete-check="games"/g)||[]).length,1);
  assert.match(html,new RegExp('data-delete-id="'+a.id+'"'));assert.doesNotMatch(html,new RegExp('data-delete-id="'+b.id+'"'));
 });
+test('completed scoreboard reuses finish button and disables score changes',()=>{
+ const g=finishGame(createGame(['甲','乙']),0),html=scoreboardPage(g);
+ assert.match(html,/比賽結束 · 甲 獲勝 · 唯讀/);
+ assert.match(html,/data-action="undo" disabled/);
+ assert.match(html,/data-action="finish">結束比賽/);
+ assert.doesNotMatch(html,/>再來一場<|>結束<\/button>/);
+});

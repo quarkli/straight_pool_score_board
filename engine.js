@@ -61,15 +61,15 @@ export function addTurn(game,{balls=0,outcome='miss',warned=false,rebreak=false,
  const previousTime=s.rows.reduce((n,r)=>n+(r.player===s.active?(r.elapsedMs||0):0),0);
  const elapsedMs=g.clock?Math.max(0,g.clock.elapsedMs[s.active]-previousTime):null;
  g.events.push({type:'turn',balls,outcome,warned:!!warned,rebreak:!!rebreak,note:String(note).slice(0,250),shots,rackEnd,thirdChoice,warningGiven:!!warningGiven,elapsedMs,at:new Date(now).toISOString()});
- const next=stateOf(g);if(next.winner!==null){g.status='finished';g.winner=next.winner;g.endedAt=new Date(now).toISOString();g.reason='target';}
+ const next=stateOf(g);if(next.winner!==null){g.status='finished';g.finalized=true;g.winner=next.winner;g.endedAt=new Date(now).toISOString();g.reason='target';}
  if(g.clock)g.clock.runningSince=g.status==='active'?now:null;
  return g;
 }
 export function finishGame(game,winner,reason='concession',now=Date.now()){
  if(game.status!=='active'||(![0,1].includes(winner)&&!(winner===null&&reason==='interrupted')))throw Error('Choose a winner for an active game.');
- const g=settleClock(game,now);if(g.clock)g.clock.runningSince=null;g.events.push({type:'finish',winner,reason,at:new Date(now).toISOString()});g.status='finished';g.winner=winner;g.reason=reason;g.endedAt=new Date(now).toISOString();return g;
+ const g=settleClock(game,now);if(g.clock)g.clock.runningSince=null;g.events.push({type:'finish',winner,reason,at:new Date(now).toISOString()});g.status='finished';g.finalized=true;g.winner=winner;g.reason=reason;g.endedAt=new Date(now).toISOString();return g;
 }
-export function undo(game){const g=structuredClone(game);g.events.pop();delete g.rackClearedAt;g.status='active';g.winner=null;delete g.endedAt;delete g.reason;if(g.clock){g.clock=settleClock(game).clock;g.clock.runningSince=null;}return g;}
+export function undo(game){if(game.status==='finished'||game.finalized)throw Error('Finished games are read-only.');const g=structuredClone(game);g.events.pop();delete g.rackClearedAt;g.status='active';g.winner=null;delete g.endedAt;delete g.reason;if(g.clock){g.clock=settleClock(game).clock;g.clock.runningSince=null;}return g;}
 export function validateHistory(data){
  if(!data||data.schemaVersion!==VERSION||!Array.isArray(data.games)||data.games.length>10000)throw Error('Unsupported JSON. Use a Straight Pool export (schemaVersion 1).');
  const ids=new Set();
@@ -86,6 +86,7 @@ export function validateHistory(data){
    else{if(replay.status!=='active'||![0,1].includes(e.breaker))throw Error('Invalid stalemate.');replay.events.push(e);}
   }
   if(g.status!==replay.status||g.winner!==replay.winner)throw Error('Game result does not match its scoring record.');
+  if(g.status==='finished')g.finalized=true;
  }
  return data.games;
 }
