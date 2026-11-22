@@ -1,5 +1,5 @@
-import {deleteToolbar,deleteControls,bindDeletion} from './deletion.js?v=20261122.18';
-import {duration,ball} from './scoreboard.js?v=20261122.18';
+import {deleteToolbar,deleteControls,bindDeletion} from './deletion.js?v=20261122.19';
+import {duration,ball} from './scoreboard.js?v=20261122.19';
 const KEY='straight-pool-practice-v1',NAME='straight-pool-practice-name';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function practiceMetrics(session){
