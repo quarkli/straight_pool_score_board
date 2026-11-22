@@ -1,7 +1,7 @@
-import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.7';
-import {rulesPage,tableDiagram} from './rules.js?v=20261122.7';
-import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.7';
-import {matchHistoryPage} from './history.js?v=20261122.7';
+import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.8';
+import {rulesPage,tableDiagram} from './rules.js?v=20261122.8';
+import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.8';
+import {matchHistoryPage} from './history.js?v=20261122.8';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -71,6 +71,16 @@ function pickScore(player,balls,end=null){
  if(!unstarted&&stateOf(original).active!==player)return;
  const g=unstarted?selectOpeningPlayer(original,player):original;
  if(g.clock?.runningSince==null){notify('請先按繼續比賽。');return;}
+ const rackEnd=end??balls;
+ if(rackEnd===14||rackEnd===15){
+  const outcome=stateOf(g).scores[player]+balls>=g.target?'win':'continue';
+  const next=addTurn(g,{balls,outcome,shots:Math.max(1,balls),rackEnd});
+  selection=null;put(next);
+  modal(inningSummary(next),'本局摘要');
+  rackSummaryPending={id:next.id,length:next.events.length};
+  summaryTimeout=setTimeout(()=>{summaryTimeout=null;if($('#modal').open)$('#modal').close();finishRackSummary();},5000);
+  return;
+ }
  selection={player,balls,end:end??(balls||0)};render();
  const dialog=$('#modal');dialog.innerHTML=scoringDialog(g,balls);dialog.showModal();
  dialog.querySelector('[data-close]').onclick=()=>dialog.close();
@@ -109,7 +119,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261122.7',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261122.8',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
