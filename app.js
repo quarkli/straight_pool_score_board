@@ -1,12 +1,12 @@
-import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer} from './engine.js?v=20261122.5';
-import {rulesPage,tableDiagram} from './rules.js?v=20261122.5';
-import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.5';
-import {matchHistoryPage} from './history.js?v=20261122.5';
+import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.6';
+import {rulesPage,tableDiagram} from './rules.js?v=20261122.6';
+import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.6';
+import {matchHistoryPage} from './history.js?v=20261122.6';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
 const names={miss:'失誤換手',safety:'安全球',foul:'一般犯規',scratch:'母球洗袋／飛出台','break-foul':'開球失誤',continue:'繼續此局',win:'達標獲勝'};
-let storageError='',swapped=false,selection=null,summaryTimeout=null;
+let storageError='',swapped=false,selection=null,summaryTimeout=null,rackSummaryPending=null;
 try{swapped=localStorage.getItem('straight-pool-swap')==='true';}catch{}
 try{const raw=localStorage.getItem(KEY);if(raw)games=validateHistory(JSON.parse(raw));current=games.find(g=>g.status==='active')?.id||null;}catch(e){storageError='無法載入儲存資料，請先匯出備份再繼續。原始資料未覆蓋。';}
 function notify(text){$('#toast').textContent=text;$('#toast').style.display='block';clearTimeout(notify.t);notify.t=setTimeout(()=>$('#toast').style.display='none',4500);}
@@ -41,6 +41,7 @@ function bind(){
  $('#turn-form')?.addEventListener('submit',e=>{e.preventDefault();try{const f=new FormData(e.target),g=addTurn(currentGame(),{balls:Number(f.get('balls')),outcome:f.get('outcome'),warned:f.has('warned'),rebreak:f.has('rebreak'),note:f.get('note')});put(g);notify(g.status==='finished'?`${g.players[g.winner]} 獲勝，紀錄已保存。`:'已保存記錄。');}catch(e){$('#form-error').textContent=translateError(e.message);}});
  document.querySelectorAll('[data-delta]').forEach(b=>b.onclick=()=>{$('#balls').value=Math.max(0,Math.min(10000,Number($('#balls').value||0)+Number(b.dataset.delta)));});
  $('#outcome')?.addEventListener('change',extra);extra();
+ document.querySelectorAll('[data-central-end]').forEach(b=>b.onclick=()=>{const g=currentGame(),end=Number(b.dataset.centralEnd),rack=rackState(g,{forInput:true});if(end>0&&end<=rack.count)return;pickScore(stateOf(g).active,end===0?0:end-rack.count,end||null);});
  document.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>pickScore(Number(b.dataset.player),Number(b.dataset.pick)));
  document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>action(b.dataset.action));
  $('#scenario')?.addEventListener('change',e=>{scenario=e.target.value;render();});document.querySelectorAll('[data-case]').forEach(b=>b.onclick=()=>{scenario=b.dataset.case;render();});
@@ -55,7 +56,7 @@ async function action(a){
  if(a==='clock'){const g=currentGame();if(g?.status==='active'){put(g.clock?.runningSince!=null?pauseClock(g):resumeClock(g));notify(g.clock?.runningSince!=null?'休息中，計時已暫停。':'繼續比賽，開始計時。');}return;}
  if(a==='export')return exportJSON();if(a==='export-game')return exportJSON([currentGame()]);if(a==='import')return $('#import-file').click();
  if(a==='new'){const g=currentGame();if(g?.status==='active'){notify('請先完成目前比賽；可使用「認輸／判定勝負」。');return;}current=null;location.hash='score';render();}
- if(a==='undo'){const g=currentGame();if(g?.events.length){put(undo(g));notify('已撤銷得分，計時暫停；確認後請按繼續比賽。');}else notify('尚無可撤銷記錄。');}
+ if(a==='undo'){const g=currentGame();if(g?.events.length){const revised=undo(g);put(g.clock?.runningSince!=null?resumeClock(revised):revised);notify('已回退上一筆記分、擊球順序與圓點歸屬。');}else notify('尚無可撤銷記錄。');}
  if(a==='finish'){const g=currentGame();modal(`<p>確認結束此場比賽並選擇勝者。分數與逐局紀錄會保留。</p><label>勝者<select id="winner-select">${g.players.map((n,i)=>`<option value="${i}">${esc(n)}</option>`).join('')}</select></label><button id="finish-confirm" class="btn primary big-action">確認勝負並保存</button>`);$('#finish-confirm').onclick=()=>{put(finishGame(g,Number($('#winner-select').value)));$('#modal').close();};}
  if(a==='link-file'){try{fileHandle=await window.showSaveFilePicker({suggestedName:'straight-pool-history.json',types:[{description:'JSON 比賽備份',accept:{'application/json':['.json']}}]});await save();render();notify('已連結 JSON 檔案。');}catch(e){if(e.name!=='AbortError')notify('無法連結檔案，請使用「匯出全部 JSON」。');}}
 }
@@ -64,13 +65,13 @@ function updateClocks(){
  const g=currentGame();if(!g)return;const totals=clockTotals(g);if($('#match-clock'))$('#match-clock').textContent=totals?duration(totals[0]+totals[1]):'未記錄';
  document.querySelectorAll('[data-player-clock]').forEach(el=>el.textContent=duration(!g.events.some(e=>e.type==='turn')&&totals?0:totals?.[Number(el.dataset.playerClock)]));
 }
-function pickScore(player,balls){
+function pickScore(player,balls,end=null){
  const original=currentGame();if(!original||original.status!=='active')return;
  const unstarted=!original.events.some(e=>e.type==='turn');
  if(!unstarted&&stateOf(original).active!==player)return;
  const g=unstarted?selectOpeningPlayer(original,player):original;
  if(g.clock?.runningSince==null){notify('請先按繼續比賽。');return;}
- selection={player,balls};render();
+ selection={player,balls,end:end??(balls||0)};render();
  const dialog=$('#modal');dialog.innerHTML=scoringDialog(g,balls);dialog.showModal();
  dialog.querySelector('[data-close]').onclick=()=>dialog.close();
  const shotInput=$('#shot-count');let shotsEdited=false;shotInput.addEventListener('input',()=>shotsEdited=true);
@@ -79,7 +80,7 @@ function pickScore(player,balls){
    const outcome=button.dataset.reason;
    const shots=shotsEdited?Number(shotInput.value):Math.max(1,balls+(['continue','win'].includes(outcome)?0:1));
    const base=unstarted?selectOpeningPlayer(currentGame(),player):currentGame();
-   const next=addTurn(base,{balls,outcome,shots,note:$('#shot-note').value,warned:$('#third-warning')?.checked||false,rebreak:false});
+   const next=addTurn(base,{balls,outcome,shots,note:$('#shot-note').value,warned:$('#third-warning')?.checked||false,rebreak:false,rackEnd:balls>0?(end??balls):null});
    const row=stateOf(next).rows.at(-1);selection=null;dialog.close();put(next);
    if(row.outcome==='break-foul'){
     modal(`<h2>開球犯規，已扣 2 分</h2><p>對手可接收現況，或要求原開球者重新開球。</p><div class="actions"><button class="btn" id="accept-break">接收現況</button><button class="btn primary" id="retry-break">要求重新開球</button></div>`);
@@ -90,12 +91,17 @@ function pickScore(player,balls){
     $('#ack-warning').onclick=()=>{const revised=structuredClone(currentGame());revised.events.at(-1).warningGiven=true;$('#modal').close();put(revised);};
    }else if(inningSummary(next)){
     modal(inningSummary(next),'本局摘要');
-    summaryTimeout=setTimeout(()=>{summaryTimeout=null;if($('#modal').open)$('#modal').close();},5000);
+    rackSummaryPending={id:next.id,length:next.events.length};
+    summaryTimeout=setTimeout(()=>{summaryTimeout=null;if($('#modal').open)$('#modal').close();finishRackSummary();},5000);
    }else if(next.status==='finished'){notify(`${next.players[next.winner]} 達標獲勝！`);}
   }catch(e){$('#dialog-error').textContent=translateError(e.message);}
  });
 }
-$('#modal').addEventListener('close',()=>{if(!$('#modal').open&&summaryTimeout){clearTimeout(summaryTimeout);summaryTimeout=null;}if(!$('#modal').open&&selection){selection=null;render();}});
+function finishRackSummary(){
+ const pending=rackSummaryPending;rackSummaryPending=null;if(!pending)return;
+ const g=currentGame();if(g?.id===pending.id&&g.events.length===pending.length&&g.status==='active'&&rackState(g).complete){const revised=structuredClone(g);revised.rackClearedAt=revised.events.length;put(revised);}
+}
+$('#modal').addEventListener('close',()=>{if(!$('#modal').open&&summaryTimeout){clearTimeout(summaryTimeout);summaryTimeout=null;}if(!$('#modal').open&&rackSummaryPending)finishRackSummary();if(!$('#modal').open&&selection){selection=null;render();}});
 setInterval(updateClocks,1000);
 function translateError(s){return ({'Resume the match clock first.':'請先按繼續比賽，再記錄得分。','Invalid shot count.':'出手次數須為 1–100,000 的整數。','Enter two names (1–40 characters).':'請輸入兩位球員的姓名（1–40 字）。','Use different names for the two players.':'兩位球員請使用不同姓名。','Target must be a whole number from 1 to 10,000.':'目標分數須為 1–10,000 的整數。','Add at least one legally scored ball to continue.':'繼續此局前，請輸入至少一顆合法進球。','The target has not been reached.':'尚未達到目標分數，請選擇其他結束方式。','A breaking foul is only possible on an opening break, with zero scoring balls.':'開球失誤僅適用於開球，合法進球數須為 0。','Enter a whole number of legal balls from 0 to 10,000.':'合法進球數須為 0–10,000 的整數。'})[s]||'資料無效，請檢查輸入或 JSON 格式。';}
 $('#import-file').addEventListener('change',async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{if(file.size>20*1024*1024)throw Error('檔案過大');const imported=validateHistory(JSON.parse(await file.text()));let added=0,conflict=0;for(const g of imported){const old=games.find(x=>x.id===g.id);if(!old){if(g.status==='active'&&games.some(x=>x.status==='active')){conflict++;continue;}games.push(g);added++;}else if(JSON.stringify(old)!==JSON.stringify(g))conflict++;}await save();current=games.find(g=>g.status==='active')?.id||current;render();notify(`已匯入 ${added} 場。${conflict?`${conflict} 場重複 ID 或進行中比賽衝突，保留現有紀錄。`:''}`);}catch{notify('無法匯入：請選擇本程式匯出的有效 JSON（上限 20 MB）。');}});
@@ -103,7 +109,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261122.5',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261122.6',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}

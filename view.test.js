@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {createGame,addTurn,finishGame,pauseClock,playerStats,selectOpeningPlayer,stateOf} from './engine.js';
+import {createGame,addTurn,finishGame,pauseClock,playerStats,selectOpeningPlayer,stateOf,rackState,undo,resumeClock} from './engine.js';
 import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js';
 import {filterHistory,matchHistoryPage,localDate} from './history.js';
 test('board has 16 aligned ball rows and two independent scrollable history regions',()=>{
@@ -59,7 +59,8 @@ test('both sides can start, then inactive scoring controls are replaced by saved
  assert.equal((initial.match(/data-pick="\d+"[^>]*disabled/g)||[]).length,0);
  assert.equal((initial.match(/data-pick="\d+"[^>]*hidden/g)||[]).length,0);
  const g=addTurn(fresh,{balls:5,outcome:'miss',shots:6});const after=scoreboardPage(g);
- assert.equal((after.match(/data-pick=/g)||[]).length,16);
+ assert.equal((after.match(/data-pick=/g)||[]).length,0);
+ assert.equal((after.match(/data-central-end=/g)||[]).length,16);
  assert.equal((after.match(/class="record-dot"/g)||[]).length,5);
 });
 test('first scorer becomes breaker with all opening elapsed time and cannot change after start',()=>{
@@ -73,7 +74,7 @@ test('14/15 scoring entries and cumulative visit thresholds have summaries, ordi
  let g=addTurn(createGame(['甲','乙']),{balls:10,outcome:'continue',shots:10});assert.equal(inningSummary(g),'');
  g=addTurn(g,{balls:4,outcome:'continue',shots:4});assert.match(inningSummary(g),/5 秒後自動關閉/);
  g=addTurn(g,{balls:1,outcome:'miss',shots:2});assert.match(inningSummary(g),/15/);
- const other=addTurn(createGame(['甲','乙']),{balls:15,outcome:'safety',shots:16});assert.match(inningSummary(other),/顆合法進球/);
+ const other=addTurn(createGame(['甲','乙']),{balls:15,outcome:'safety',shots:16});assert.match(inningSummary(other),/合法進球/);
 });
 
 test('score buttons contain white dots without visible numbers',()=>{
@@ -87,7 +88,8 @@ test('inactive saved dots survive a zero-point handoff at the end of the same in
  g=addTurn(g,{balls:0,outcome:'safety',shots:1});
  const html=scoreboardPage(g);
  assert.equal((html.match(/class="record-dot"/g)||[]).length,7);
- assert.equal((html.match(/data-pick=/g)||[]).length,16);
+ assert.equal((html.match(/data-pick=/g)||[]).length,0);
+ assert.equal((html.match(/data-central-end=/g)||[]).length,16);
  assert.ok(!html.includes('data-pick="0" data-player="0"'));
 });
 test('completed games keep both player score dots and expose no scoring buttons',()=>{
@@ -95,4 +97,40 @@ test('completed games keep both player score dots and expose no scoring buttons'
  g=addTurn(g,{balls:3,outcome:'miss',shots:4});g=finishGame(g,0);
  const html=scoreboardPage(g);assert.equal((html.match(/class="record-dot"/g)||[]).length,8);
  assert.equal((html.match(/data-pick=/g)||[]).length,0);
+});
+
+test('rack ownership persists across handoffs: left 1-3 then right 4-6',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss',shots:4,rackEnd:3});
+ g=addTurn(g,{balls:3,outcome:'safety',shots:4,rackEnd:6});
+ assert.deepEqual(stateOf(g).scores,[3,3]);const rack=rackState(g);
+ assert.deepEqual(rack.owners.slice(1,7),[0,0,0,1,1,1]);
+ const html=scoreboardPage(g);assert.equal((html.match(/class="record-dot"/g)||[]).length,6);
+ assert.equal((html.match(/data-pick=/g)||[]).length,0);assert.equal((html.match(/data-central-end=/g)||[]).length,16);
+});
+test('undo restores prior score, shooter and rack marks instead of removing the full rack',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss',shots:4,rackEnd:3});
+ g=addTurn(g,{balls:3,outcome:'safety',shots:4,rackEnd:6});g=undo(g);
+ assert.deepEqual(stateOf(g).scores,[3,0]);assert.equal(stateOf(g).active,1);
+ assert.equal(rackState(g).count,3);assert.deepEqual(rackState(g).owners.slice(1,4),[0,0,0]);
+});
+test('rack summary at 14 keeps marks until dismissed then starts empty next rack',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss',shots:4,rackEnd:3});
+ g=addTurn(g,{balls:11,outcome:'continue',shots:11,rackEnd:14});
+ assert.equal(rackState(g).count,14);assert.match(inningSummary(g),/甲/);assert.match(inningSummary(g),/乙/);
+ g.rackClearedAt=g.events.length;
+ assert.equal(rackState(g).count,0);assert.equal(rackState(g).number,2);
+ g=addTurn(g,{balls:2,outcome:'miss',shots:3,rackEnd:2});
+ assert.equal(rackState(g).count,2);assert.deepEqual(rackState(g).owners.slice(1,3),[1,1]);
+});
+test('all 15 object balls have ownership and zero scoring never removes prior rack marks',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss',shots:4,rackEnd:3});
+ g=addTurn(g,{balls:0,outcome:'safety',shots:1});assert.equal(rackState(g).count,3);
+ g=addTurn(g,{balls:12,outcome:'continue',shots:12,rackEnd:15});assert.equal(rackState(g).count,15);
+ assert.deepEqual(rackState(g).owners.slice(1,4),[0,0,0]);assert.deepEqual(rackState(g).owners.slice(4),Array(12).fill(0));
+});
+
+test('completed legacy rack does not block selecting the next rack first ball',()=>{
+ const g=addTurn(createGame(['甲','乙']),{balls:15,outcome:'continue',shots:15});
+ const html=scoreboardPage(g);assert.match(html,/data-central-end="1"[^>]*>(?!disabled)/);
+ const button=html.match(/<button[^>]*data-central-end="1"[^>]*>/)[0];assert.ok(!button.includes('disabled'));
 });

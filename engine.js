@@ -41,11 +41,12 @@ export function stateOf(game){
  }
  return s;
 }
-export function addTurn(game,{balls=0,outcome='miss',warned=false,rebreak=false,note='',shots=null,warningGiven=false},now=Date.now()){
+export function addTurn(game,{balls=0,outcome='miss',warned=false,rebreak=false,note='',shots=null,warningGiven=false,rackEnd=null},now=Date.now()){
  if(game.status!=='active')throw Error('This game is finished.');
  const s=stateOf(game);
  if(s.winner!==null)throw Error('Target already reached.');
  if(!Number.isInteger(balls)||balls<0||balls>10000)throw Error('Enter a whole number of legal balls from 0 to 10,000.');
+ if(rackEnd!==null&&(!Number.isInteger(rackEnd)||rackEnd<1||rackEnd>15||balls<1))throw Error('Invalid rack endpoint.');
  if(shots!==null&&(!Number.isInteger(shots)||shots<1||shots>100000))throw Error('Invalid shot count.');
  if(game.clock&&game.clock.runningSince===null)throw Error('Resume the match clock first.');
  if(!outcomes.includes(outcome))throw Error('Choose a valid result.');
@@ -58,7 +59,7 @@ export function addTurn(game,{balls=0,outcome='miss',warned=false,rebreak=false,
  const g=settleClock(game,now);
  const previousTime=s.rows.reduce((n,r)=>n+(r.player===s.active?(r.elapsedMs||0):0),0);
  const elapsedMs=g.clock?Math.max(0,g.clock.elapsedMs[s.active]-previousTime):null;
- g.events.push({type:'turn',balls,outcome,warned:!!warned,rebreak:!!rebreak,note:String(note).slice(0,250),shots,warningGiven:!!warningGiven,elapsedMs,at:new Date(now).toISOString()});
+ g.events.push({type:'turn',balls,outcome,warned:!!warned,rebreak:!!rebreak,note:String(note).slice(0,250),shots,rackEnd,warningGiven:!!warningGiven,elapsedMs,at:new Date(now).toISOString()});
  const next=stateOf(g);if(next.winner!==null){g.status='finished';g.winner=next.winner;g.endedAt=new Date(now).toISOString();g.reason='target';}
  if(g.clock)g.clock.runningSince=g.status==='active'?now:null;
  return g;
@@ -109,6 +110,22 @@ export function resumeClock(game,now=Date.now()){
  if(!g.clock)g.clock={elapsedMs:[0,0],runningSince:null,startedAt:now,partial:game.events.length>0};
  if(g.clock.runningSince===null)g.clock.runningSince=now;
  return g;
+}
+export function rackState(game,{forInput=false}={}){
+ let owners=Array(16).fill(null),count=0,number=1,complete=false,rows=[];
+ const reset=()=>{owners=Array(16).fill(null);count=0;number++;complete=false;rows=[];};
+ for(const r of stateOf(game).rows){
+  if(complete)reset();
+  if(r.third||(r.outcome==='break-foul'&&r.rebreak)){reset();continue;}
+  const limit=r.rackEnd===15||(!r.rackEnd&&r.balls===15&&count===0)?15:14;
+  for(let i=0;i<r.balls;i++){
+   if(count>=limit)reset();
+   owners[++count]=r.player;
+  }
+  rows.push(r);complete=count>=14;
+ }
+ if(complete&&(forInput||game.rackClearedAt===game.events.length))reset();
+ return {owners,count,number,complete,rows};
 }
 export function visitRecords(game,player){
  const groups=[];
