@@ -18,3 +18,11 @@ body.score-screen{height:100dvh;overflow:hidden;background:#edf1ed}body.score-sc
 .ball-score-button{border:0;padding:0;background:transparent;cursor:pointer;border-radius:50%;min-height:0}.ball-score-button:disabled{cursor:default}.ball-score-button:not(:disabled):hover .pool-ball{box-shadow:0 0 10px #ead396,inset -3px -4px 6px #0005}.ball-score-button:focus-visible{outline:2px solid #ebdba9;outline-offset:0}
 
 .score-record{position:relative;gap:3px}.turn-mark{color:#fff;font-size:14px;font-weight:800;line-height:1;position:absolute;left:calc(50% + 10px);white-space:nowrap}
+
+[data-player-tone="0"]{--player-tint:#e5efff;--player-deep:#204c83;--player-edge:#87aada}
+[data-player-tone="1"]{--player-tint:#fff0dc;--player-deep:#85501c;--player-edge:#d5ac76}
+.match-player[data-player-tone],.player-record-panel[data-player-tone]{background:var(--player-tint);border-color:var(--player-edge)}
+.match-player[data-player-tone].on-table{background:var(--player-deep);border-color:var(--player-edge);color:#fff}
+dialog[data-player-tone]{background:var(--player-tint);border:2px solid var(--player-edge)}
+dialog[data-player-tone] .reason-button{background:#ffffffb8;border-color:var(--player-edge);color:var(--player-deep)}
+dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
