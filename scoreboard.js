@@ -1,4 +1,4 @@
-import {stateOf,clockTotals,visitRecords,rackState} from './engine.js?v=20261122.10';
+import {stateOf,clockTotals,visitRecords,rackState} from './engine.js?v=20261122.11';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function duration(ms){if(ms==null)return '未記錄';const sec=Math.floor(Math.max(0,ms)/1000);return `${Math.floor(sec/3600).toString().padStart(2,'0')}:${Math.floor(sec%3600/60).toString().padStart(2,'0')}:${(sec%60).toString().padStart(2,'0')}`;}
 const colors=['#fff','#e9b825','#2467be','#c73e38','#6947a3','#e97925','#277e5c','#973e46','#182123','#e9b825','#2467be','#c73e38','#6947a3','#e97925','#277e5c','#973e46'];
@@ -10,7 +10,7 @@ function pickerCell(game,player,n,side,{unstarted,done,paused,rack,selection}){
  const marks=[];let end=0,last=[0,0];
  for(const r of rack.rows){end+=r.balls;if(r.balls)last[r.player]=end;
   const symbol=r.outcome==='safety'?'△':['foul','scratch','break-foul'].includes(r.outcome)?'×':'';
-  if(symbol&&r.player===player&&last[player]===n)marks.push(symbol);
+  if(r.balls>0&&symbol&&r.player===player&&last[player]===n)marks.push(symbol);
  }
  const annotation=marks.length?`<span class="turn-mark" aria-label="${marks.map(m=>m==='△'?'安全球':'犯規').join('、')}">${marks.join('')}</span>`:'';
  if(!unstarted){

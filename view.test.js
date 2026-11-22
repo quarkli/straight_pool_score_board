@@ -143,12 +143,12 @@ test('rack ownership remains scattered and safety marks last scored ball only',(
  assert.equal((html.match(/class="turn-mark"/g)||[]).length,1);
  assert.equal((html.match(/data-pick=/g)||[]).length,0);
 });
-test('zero scoring safety and foul annotate without creating cue-ball score dots',()=>{
+test('zero scoring safety and foul leave neither dots nor handover marks',()=>{
  let g=addTurn(createGame(['甲','乙']),{balls:0,outcome:'safety'});
  g=addTurn(g,{balls:0,outcome:'foul'});
  const html=scoreboardPage(g);
  assert.equal((html.match(/class="record-dot"/g)||[]).length,0);
- assert.match(html,/aria-label="安全球"/);assert.match(html,/aria-label="犯規"/);
+ assert.equal((html.match(/class="turn-mark"/g)||[]).length,0);
 });
 test('interrupted games preserve scores and timing without a winner or win-rate impact',()=>{
  let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss',rackEnd:3});
