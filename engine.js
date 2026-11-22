@@ -42,6 +42,7 @@ export function addTurn(game,{balls=0,outcome='miss',warned=false,rebreak=false,
  if((outcome==='continue'||outcome==='win')&&balls===0)throw Error('Add at least one legally scored ball to continue.');
  if(outcome==='win'&&s.scores[s.active]+balls<game.target)throw Error('The target has not been reached.');
  if(outcome==='break-foul'&&warned)throw Error('Breaking fouls do not count toward three consecutive fouls.');
+ if(s.scores[s.active]+balls>=game.target&&balls>0){outcome='win';warned=false;rebreak=false;}
  // Balls are legal scores BEFORE the final miss/safety/foul, never balls pocketed on a foul shot.
  const g=structuredClone(game);g.events.push({type:'turn',balls,outcome,warned:!!warned,rebreak:!!rebreak,note:String(note).slice(0,250),at:new Date().toISOString()});
  const next=stateOf(g);if(next.winner!==null){g.status='finished';g.winner=next.winner;g.endedAt=new Date().toISOString();g.reason='target';}

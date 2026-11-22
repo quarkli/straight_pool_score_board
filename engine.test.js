@@ -14,3 +14,5 @@ test('negative scoring does not prematurely win',()=>{let g=turn(start(5),0,'fou
 test('concession and valid round trip JSON export',()=>{let g=finishGame(turn(start(),6),1);assert.equal(g.winner,1);assert.deepEqual(validateHistory({schemaVersion:1,games:[g]}),[g]);});
 test('reject tampered winner, invalid numeric values, duplicate IDs',()=>{const g=turn(start(5),5);assert.throws(()=>validateHistory({schemaVersion:1,games:[{...g,winner:1}]}));assert.throws(()=>turn(start(),NaN));assert.throws(()=>turn(start(),-1));assert.throws(()=>createGame(['a','A']));assert.throws(()=>validateHistory({schemaVersion:1,games:[g,g]}));});
 test('statistics exclude unfinished games and count completed visits',()=>{const g=turn(start(10),10);const p=playerStats([g,start()]);assert.equal(p[0].wins,1);assert.equal(p[0].games,1);assert.equal(p[0].balls,10);assert.equal(p[0].high,10);assert.equal(p[1].visits,0);});
+
+test('reaching target ends match before any later reported foul',()=>{const g=addTurn(createGame(['甲','乙'],5),{balls:5,outcome:'foul'});assert.equal(g.status,'finished');assert.equal(stateOf(g).scores[0],5);assert.equal(stateOf(g).standard[0],0);});
