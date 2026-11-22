@@ -134,3 +134,19 @@ test('completed legacy rack does not block selecting the next rack first ball',(
  const html=scoreboardPage(g);assert.match(html,/data-central-end="1"[^>]*>(?!disabled)/);
  const button=html.match(/<button[^>]*data-central-end="1"[^>]*>/)[0];assert.ok(!button.includes('disabled'));
 });
+test('rack ownership remains scattered and safety marks last scored ball only',()=>{
+ let g=createGame(['甲','乙']);
+ for(const [balls,outcome,rackEnd] of [[3,'miss',3],[4,'miss',7],[1,'safety',8],[1,'miss',9],[1,'miss',10]])g=addTurn(g,{balls,outcome,rackEnd});
+ const html=scoreboardPage(g);
+ assert.deepEqual(rackState(g).owners.slice(1,11),[0,0,0,1,1,1,1,0,1,0]);
+ assert.match(html,/data-record-player="0" data-record-score="8"[^]*?aria-label="安全球"/);
+ assert.equal((html.match(/class="turn-mark"/g)||[]).length,1);
+ assert.equal((html.match(/data-pick=/g)||[]).length,0);
+});
+test('zero scoring safety and foul annotate without creating cue-ball score dots',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:0,outcome:'safety'});
+ g=addTurn(g,{balls:0,outcome:'foul'});
+ const html=scoreboardPage(g);
+ assert.equal((html.match(/class="record-dot"/g)||[]).length,0);
+ assert.match(html,/aria-label="安全球"/);assert.match(html,/aria-label="犯規"/);
+});

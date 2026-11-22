@@ -16,3 +16,5 @@ body.score-screen{height:100dvh;overflow:hidden;background:#edf1ed}body.score-sc
 .score-option .option-dot{background:transparent;border:2px solid #fff;box-shadow:none}.score-option.chosen .option-dot{background:#fff}.score-option:not(:disabled):hover .option-dot{background:#ffffff25;border-color:#fff;box-shadow:0 0 7px #ffffff55}.score-record{grid-row:1;display:flex;align-items:center;justify-content:center;pointer-events:none}.record-dot{display:block;width:15px;height:15px;max-width:70%;max-height:70%;border-radius:50%;background:#fff;box-shadow:0 0 5px #ffffff38}
 
 .ball-score-button{border:0;padding:0;background:transparent;cursor:pointer;border-radius:50%;min-height:0}.ball-score-button:disabled{cursor:default}.ball-score-button:not(:disabled):hover .pool-ball{box-shadow:0 0 10px #ead396,inset -3px -4px 6px #0005}.ball-score-button:focus-visible{outline:2px solid #ebdba9;outline-offset:0}
+
+.score-record{position:relative;gap:3px}.turn-mark{color:#fff;font-size:14px;font-weight:800;line-height:1;position:absolute;left:calc(50% + 10px);white-space:nowrap}
