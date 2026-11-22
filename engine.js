@@ -153,10 +153,31 @@ export function visitRecords(game,player){
  }
  return groups;
 }
+// Each rack's first recorded attack is one opening; uncompleted attacks stay pending.
+export function rackOpeningStats(game){
+ const stats=[0,1].map(()=>({openings:0,openingEvaluated:0,openingSuccess:0}));
+ const rows=stateOf(game).rows;let index=0,count=0,fresh=true,reset=false,attack=null;
+ const end=safety=>{if(!attack)return;const a=stats[attack.player];a.openingEvaluated++;if(!safety&&attack.balls>=2)a.openingSuccess++;attack=null;};
+ const begin=p=>{if(reset){count=0;fresh=true;reset=false;}if(fresh){attack={player:p,balls:0};stats[p].openings++;fresh=false;}};
+ for(const event of game.events){
+  if(event.type==='stalemate'){attack=null;reset=true;continue;}
+  if(event.type!=='turn')continue;
+  const row=rows[index++];begin(row.player);
+  const limit=row.rackEnd===15||(!row.rackEnd&&row.balls===15&&count===0)?15:14;
+  for(let i=0;i<row.balls;i++){
+   begin(row.player);count++;if(attack?.player===row.player)attack.balls++;
+   if(count>=limit){end(i===row.balls-1&&row.outcome==='safety');reset=true;}
+  }
+  if(row.outcome!=='continue'||row.total>=game.target)end(row.outcome==='safety');
+  if((row.third&&row.thirdChoice!=='continue')||(row.outcome==='break-foul'&&row.rebreak))reset=true;
+ }
+ return stats;
+}
 // Derive statistics from the event log; existing version-1 JSON needs no migration.
 export function tacticalStats(game){
  const result=[0,1].map(()=>({misses:0,safeties:0,completedVisits:0,zeroVisits:0,
-  safetyEvaluated:0,safetyScoredAgainst:0,safetyBallsAgainst:0,safetyHeld:0,safetyOpponentFouls:0}));
+  safetyEvaluated:0,safetyScoredAgainst:0,safetyBallsAgainst:0,safetyHeld:0,safetyOpponentFouls:0,openings:0,openingEvaluated:0,openingSuccess:0}));
+ const openings=rackOpeningStats(game);result.forEach((a,p)=>Object.assign(a,openings[p]));
  const scoringRows=stateOf(game).rows;
  let segment=0,rowIndex=0;const rows=[];
  for(const e of game.events){
@@ -199,7 +220,7 @@ export function playerStats(games){
    const key=name.trim().toLocaleLowerCase();
    const a=map.get(key)||{name,games:0,wins:0,points:0,balls:0,visits:0,high:0,fouls:0,penalties:0,
     misses:0,safeties:0,completedVisits:0,zeroVisits:0,safetyEvaluated:0,
-    safetyScoredAgainst:0,safetyBallsAgainst:0,safetyHeld:0,safetyOpponentFouls:0,
+    safetyScoredAgainst:0,safetyBallsAgainst:0,safetyHeld:0,safetyOpponentFouls:0,openings:0,openingEvaluated:0,openingSuccess:0,
     timedGames:0,timeMs:0,timedVisits:0,visitTimeMs:0,timedShots:0,shotTimeMs:0,recordedShots:0,shotPoints:0,shotMisses:0};
    a.games++;a.wins+=g.winner===p?1:0;a.points+=s.scores[p];a.balls+=s.balls[p];
    a.visits+=s.visits[p];a.high=Math.max(a.high,s.high[p]);

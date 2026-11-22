@@ -54,11 +54,16 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 @media(max-width:900px){.match-toolbar .target-tag{font-size:17px}.match-toolbar .target-tag b{font-size:28px}.match-toolbar .live-wall-clock{font-size:21px}}
 @media(max-width:540px){.match-toolbar{gap:3px}.match-toolbar .match-tools{gap:2px}.match-toolbar .target-tag{font-size:13px;padding:0 3px}.match-toolbar .target-tag b{font-size:24px}.match-toolbar .live-wall-clock{font-size:16px}}
 
-/* Landscape uses two columns of eight balls to provide larger touch targets. */
+/* Landscape keeps one vertical ball column and gives more height to scoring. */
 @media(orientation:landscape){
  .match-score{font-size:46px}
  .match-arena{grid-template-columns:minmax(0,1fr) 290px minmax(0,1fr);gap:14px}
- .ball-rows{grid-auto-flow:column;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));gap:4px 8px}
+ .ball-rows{grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(16,minmax(0,1fr));gap:2px}
+ body.score-screen>header{height:52px;padding:6px 18px}
+ body.score-screen main{height:calc(100dvh - 52px);padding:8px 18px}
+ .score-shell{grid-template-rows:40px 86px 26px minmax(0,1fr) 40px;gap:6px}
+ .match-player{padding:6px 14px}.match-player-title h1{font-size:18px}
+ .player-clock span,.foul-indicator span{margin-bottom:2px}
  .ball-row{grid-template-columns:minmax(0,1fr) 50px minmax(0,1fr);gap:3px}
  .ball-center .pool-ball{width:min(40px,100cqh,100cqw)}
  .ball-center .pool-ball>span{font-size:clamp(9px,32cqh,13px)}

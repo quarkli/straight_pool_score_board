@@ -1,4 +1,4 @@
-import {stateOf,clockTotals,visitRecords,rackState} from './engine.js?v=20261123.26';
+import {stateOf,clockTotals,visitRecords,rackState,tacticalStats} from './engine.js?v=20261123.27';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function duration(ms){if(ms==null)return '未記錄';const sec=Math.floor(Math.max(0,ms)/1000);return `${Math.floor(sec/3600).toString().padStart(2,'0')}:${Math.floor(sec%3600/60).toString().padStart(2,'0')}:${(sec%60).toString().padStart(2,'0')}`;}
 const colors=['#fff','#e9b825','#2467be','#c73e38','#6947a3','#e97925','#277e5c','#973e46','#182123','#e9b825','#2467be','#c73e38','#6947a3','#e97925','#277e5c','#973e46'];
@@ -49,12 +49,13 @@ export function inningSummary(game){
 }
 
 export function matchStats(game){
- const s=stateOf(game),times=clockTotals(game);
+ const s=stateOf(game),times=clockTotals(game),tactics=tacticalStats(game);
+ const success=(n,d)=>d?`${(n/d*100).toFixed(1)}%（${n}／${d}）`:'—';
  const players=game.players.map((name,p)=>{
   const rows=s.rows.filter(r=>r.player===p),shotsKnown=rows.length>0&&rows.every(r=>r.shots!=null),shots=rows.reduce((n,r)=>n+(r.shots||0),0),misses=rows.filter(r=>r.outcome==='miss').length;
   const timed=rows.every(r=>r.elapsedMs!=null),elapsed=rows.reduce((n,r)=>n+(r.elapsedMs||0),0);
-  return {name,values:[s.scores[p],s.balls[p],s.visits[p],s.high[p],s.visits[p]?(s.balls[p]/s.visits[p]).toFixed(2):'—',misses,rows.filter(r=>r.outcome==='safety').length,s.standard[p]+s.breaking[p],s.penalties[p],shotsKnown?shots:'未記錄',times?duration(times[p]):'未記錄',shotsKnown&&shots?(s.scores[p]/shots).toFixed(2):'未記錄',shotsKnown&&timed&&shots?duration(elapsed/shots):'未記錄',shotsKnown&&shots?(misses/shots*100).toFixed(1)+'%':'未記錄']};
+  return {name,values:[s.scores[p],s.balls[p],s.visits[p],s.high[p],s.visits[p]?(s.balls[p]/s.visits[p]).toFixed(2):'—',misses,rows.filter(r=>r.outcome==='safety').length,s.standard[p]+s.breaking[p],s.penalties[p],shotsKnown?shots:'未記錄',times?duration(times[p]):'未記錄',shotsKnown&&shots?(s.scores[p]/shots).toFixed(2):'未記錄',shotsKnown&&timed&&shots?duration(elapsed/shots):'未記錄',shotsKnown&&shots?(misses/shots*100).toFixed(1)+'%':'未記錄',success(tactics[p].safetyHeld,tactics[p].safetyEvaluated),success(tactics[p].openingSuccess,tactics[p].openingEvaluated)]};
  });
- const labels=['淨得分','合法進球','出場數','最高連進','平均每次出場進球','失誤不進','安全球','犯規次數','扣分合計','出手次數（預估）','選手用時','平均出手得分','平均出手用時','失誤率'];
- return `<section class="match-stats" aria-label="本場雙方統計"><p>${game.status==='finished'?'比賽結束 · 唯讀紀錄':'比賽進行中 · 截至目前記分'} · 目標 ${game.target} 分<br>比賽有效用時 ${times?duration(times[0]+times[1]):'未記錄'}</p><table><thead><tr><th>統計項目</th>${players.map((p,i)=>`<th data-player-tone="${i}" style="background:var(--player-tint)">${esc(p.name)}${game.winner===i?' · 勝':''}</th>`).join('')}</tr></thead><tbody>${labels.map((label,i)=>`<tr><th scope="row">${label}</th>${players.map(p=>`<td>${p.values[i]}</td>`).join('')}</tr>`).join('')}</tbody></table><p class="note">只計本場，不合併其他對局。出場數包含零分；每次出場平均使用合法進球。出手數通常為估算，相關每桿統計供參考。平均出手用時以已記分段的用時計算，選手用時包含目前尚未提交記分的時間；休息不計時。</p></section>`;
+ const labels=['淨得分','合法進球','出場數','最高連進','平均每次出場進球','失誤不進','安全球','犯規次數','扣分合計','出手次數（預估）','選手用時','平均出手得分','平均出手用時','失誤率','防守成功率','開局成功率'];
+ return `<section class="match-stats" aria-label="本場雙方統計"><p>${game.status==='finished'?'比賽結束 · 唯讀紀錄':'比賽進行中 · 截至目前記分'} · 目標 ${game.target} 分<br>比賽有效用時 ${times?duration(times[0]+times[1]):'未記錄'}</p><table><thead><tr><th>統計項目</th>${players.map((p,i)=>`<th data-player-tone="${i}" style="background:var(--player-tint)">${esc(p.name)}${game.winner===i?' · 勝':''}</th>`).join('')}</tr></thead><tbody>${labels.map((label,i)=>`<tr><th scope="row">${label}</th>${players.map(p=>`<td>${p.values[i]}</td>`).join('')}</tr>`).join('')}</tbody></table><p class="note">防守成功＝安全球換手後，對手緊接的一次完整出場沒有合法進球；扣分後淨分為零不算。開局以每個球堆首次出場為單位，非安全球結束且合法進球至少 2 顆算成功，分段合併；安全球開局計為未成功。成功率＝成功次數 ÷ 可評估次數，括號為成功／可評估，尚未完成者暫不計入。只計本場，不合併其他對局。出場數包含零分；每次出場平均使用合法進球。出手數通常為估算，相關每桿統計供參考。平均出手用時以已記分段的用時計算，選手用時包含目前尚未提交記分的時間；休息不計時。</p></section>`;
 }
