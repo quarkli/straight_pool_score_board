@@ -82,3 +82,6 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
  .record-heading{padding:5px 8px}.record-heading>span{display:none}.match-status{font-size:10px}
  .match-bottom .btn{min-height:28px;padding:4px 8px}.match-toolbar .target-tag b{font-size:26px}.match-toolbar .live-wall-clock{font-size:20px}
 }
+
+.breaker-label{font-size:12px;white-space:nowrap;flex:none;font-weight:500;opacity:.8}
+@media(max-width:540px){.breaker-label{font-size:10px}}

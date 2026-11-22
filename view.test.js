@@ -255,3 +255,10 @@ test('match and history show defensive and rack-opening success rates with count
  let g=addTurn(createGame(['甲','乙']),{balls:2,outcome:'safety'});g=addTurn(g,{balls:0,outcome:'miss'});
  for(const html of [matchStats(g),matchHistoryPage([g],{})]){assert.match(html,/防守成功率/);assert.match(html,/開局成功率/);assert.match(html,/100\.0%（1／1）/);assert.match(html,/0\.0%（0／1）/);}
 });
+
+test('breaker label appears only after first confirmed score and follows identity when swapped',()=>{
+ const initial=createGame(['甲','乙']);assert.doesNotMatch(scoreboardPage(initial),/breaker-label/);
+ let g=addTurn(selectOpeningPlayer(initial,1),{balls:0,outcome:'safety'});
+ for(const swapped of [false,true]){const html=scoreboardPage(g,{swapped});assert.equal((html.match(/class="breaker-label"/g)||[]).length,1);assert.match(html,/<h1>乙<\/h1><span class="breaker-label">（先攻）<\/span>/);}
+ g=addTurn(g,{balls:3,outcome:'miss'});assert.match(scoreboardPage(g),/<h1>乙<\/h1><span class="breaker-label">（先攻）/);
+});
