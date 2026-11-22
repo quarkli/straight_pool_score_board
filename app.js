@@ -1,12 +1,12 @@
-import {bindDeletion} from './deletion.js?v=20261122.24';
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261122.24';
-import {changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.24';
-import {rulesPage,tableDiagram} from './rules.js?v=20261122.24';
-import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.24';
-import {matchHistoryPage} from './history.js?v=20261122.24';
+import {bindDeletion} from './deletion.js?v=20261122.25';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261122.25';
+import {changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.25';
+import {rulesPage,tableDiagram} from './rules.js?v=20261122.25';
+import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.25';
+import {matchHistoryPage} from './history.js?v=20261122.25';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const KEY='straight-pool-v1',PREF='straight-pool-players-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
+const KEY='straight-pool-v1',PREF='straight-pool-players-v1',TARGET_PREF='straight-pool-target-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
 const names={miss:'失誤換手',safety:'安全球',foul:'一般犯規',scratch:'母球洗袋／飛出台','break-foul':'開球失誤',continue:'繼續此局',win:'達標獲勝'};
 let storageError='',swapped=false,selection=null,summaryTimeout=null,rackSummaryPending=null;
 try{swapped=localStorage.getItem('straight-pool-swap')==='true';}catch{}
@@ -19,7 +19,9 @@ function put(g){const i=games.findIndex(x=>x.id===g.id);if(i<0)games.push(g);els
 function exportJSON(list=games){const data=storageError?localStorage.getItem(KEY):JSON.stringify({...payload(),games:list},null,2);const blob=new Blob([data],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`straight-pool-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);notify('JSON 備份已下載。');}
 function head(kicker,title,desc,actions=''){return `<div class="page-head"><div><div class="eyebrow">${kicker}</div><h1>${title}</h1><p>${desc}</p></div><div class="actions">${actions}</div></div>`;}
 function btn(action,text,kind=''){return `<button class="btn ${kind}" data-action="${action}">${text}</button>`;}
-function setup(){let pref=['',''];try{pref=JSON.parse(localStorage.getItem(PREF)||'["",""]');}catch{}return head('YOUR NEXT RUN','每一桿，都算數。','14.1 連續撞球，從這裡開始。',btn('export','匯出 JSON'))+`<section class="card setup"><div class="intro-table">${tableDiagram({full:true,object:null,cue:[110,140]})}</div><h2>開始一場比賽</h2><p class="sub">設定雙方球員與目標分數，姓名會自動記住。</p><form id="setup-form" class="section"><div class="form-grid"><label>球員一<input name="p0" maxlength="40" required autocomplete="off" placeholder="輸入姓名" value="${esc(pref[0])}"></label><label>球員二<input name="p1" maxlength="40" required autocomplete="off" placeholder="輸入姓名" value="${esc(pref[1])}"></label><label>目標分數<input name="target" type="number" min="1" max="10000" step="1" value="100" required></label><div class="opening-note"><strong>開球選手</strong><p>進入記分板後，左右都能開始記分。先記分者自動成為開球選手。</p></div></div><div id="form-error" class="error" role="alert"></div><button class="btn primary big-action" ${storageError?'disabled':''}>開始比賽</button></form><p class="note">自動保存進度，可隨時離開再回來。每局結束後建議下載 JSON 備份。</p></section>`;}
+function preferredTarget(){try{const raw=localStorage.getItem(TARGET_PREF);const value=Number(raw??games.at(-1)?.target??100);if(Number.isInteger(value)&&value>=1&&value<=10000)return value;}catch{}return 100;}
+function rememberTarget(value){if(!Number.isInteger(value)||value<1||value>10000)return;try{localStorage.setItem(TARGET_PREF,String(value));}catch{notify('無法記住目標分數，請檢查瀏覽器儲存空間。');}}
+function setup(){let pref=['',''];try{pref=JSON.parse(localStorage.getItem(PREF)||'["",""]');}catch{}return head('YOUR NEXT RUN','每一桿，都算數。','14.1 連續撞球，從這裡開始。',btn('export','匯出 JSON'))+`<section class="card setup"><div class="intro-table">${tableDiagram({full:true,object:null,cue:[110,140]})}</div><h2>開始一場比賽</h2><p class="sub">設定雙方球員與目標分數，姓名與目標分數會自動記住。</p><form id="setup-form" class="section"><div class="form-grid"><label>球員一<input name="p0" maxlength="40" required autocomplete="off" placeholder="輸入姓名" value="${esc(pref[0])}"></label><label>球員二<input name="p1" maxlength="40" required autocomplete="off" placeholder="輸入姓名" value="${esc(pref[1])}"></label><label>目標分數<input name="target" type="number" min="1" max="10000" step="1" value="${preferredTarget()}" required></label><div class="opening-note"><strong>開球選手</strong><p>進入記分板後，左右都能開始記分。先記分者自動成為開球選手。</p></div></div><div id="form-error" class="error" role="alert"></div><button class="btn primary big-action" ${storageError?'disabled':''}>開始比賽</button></form><p class="note">自動保存進度，可隨時離開再回來。每局結束後建議下載 JSON 備份。</p></section>`;}
 function ledger(g){const s=stateOf(g);return `<div class="scroll-table"><table><thead><tr><th>局次</th><th>球員</th><th>進球</th><th>結果</th><th>扣分</th><th>淨得分</th><th>累計</th></tr></thead><tbody>${s.rows.length?s.rows.map(r=>`<tr><td>${r.visit}</td><td class="name">${esc(g.players[r.player])}</td><td>${r.balls}</td><td>${names[r.outcome]}${r.third?' · 三犯追加':''}${r.rebreak?' · 重開':''}${r.note?`<div class="note">${esc(r.note)}</div>`:''}</td><td class="negative">${r.penalty?`−${r.penalty}`:'—'}</td><td class="${r.net<0?'negative':'positive'}">${r.net>0?'+':''}${r.net}</td><td><strong>${r.total}</strong></td></tr>`).join(''):'<tr><td colspan="7" class="empty">第一桿，準備好了嗎？</td></tr>'}</tbody></table></div>`;}
 function scorePage(){const g=currentGame();return g?scoreboardPage(g,{swapped,selection}):setup();}
 function chart(g){const s=stateOf(g);if(!s.rows.length)return '<div class="empty">尚無計分資料</div>';const series=[[0],[0]],scores=[0,0];s.rows.forEach(r=>{scores[r.player]=r.total;series.forEach((a,i)=>a.push(scores[i]));});const lo=Math.min(0,...series.flat()),hi=Math.max(1,...series.flat()),x=i=>48+i*650/Math.max(1,s.rows.length),y=v=>235-(v-lo)*195/(hi-lo);return `<div class="chart-legend">${g.players.map((n,i)=>`<span style="color:${i?'#a87732':'#21634a'}">● ${esc(n)}</span>`).join('')}</div><div class="chart-wrap"><svg class="chart" viewBox="0 0 740 280" role="img" aria-label="本場雙方累積分數走勢，依記錄先後排列">${[0,1,2,3,4].map(i=>{const v=lo+(hi-lo)*i/4;return `<line x1="48" x2="700" y1="${y(v)}" y2="${y(v)}" stroke="#e2e8e1"/><text x="38" y="${y(v)+4}" text-anchor="end" font-size="12" fill="#71847b">${Math.round(v)}</text>`;}).join('')}${series.map((a,i)=>`<polyline points="${a.map((v,j)=>`${x(j)},${y(v)}`).join(' ')}" stroke="${i?'#b78a47':'#21634a'}" fill="none" stroke-width="3"/>`).join('')}<text x="370" y="270" text-anchor="middle" fill="#71847b" font-size="12">記錄順序（含局內分段記錄）</text></svg></div>`;}
@@ -48,7 +50,8 @@ function bind(){
  bindPractice(render,notify);
  for(const [field,key] of [['history-from','from'],['history-to','to'],['history-player','player'],['history-opponent','opponent']]){document.getElementById(field)?.addEventListener('change',e=>{historyFilters[key]=e.target.value;render();});}
 
- $('#setup-form')?.addEventListener('submit',e=>{e.preventDefault();try{const f=new FormData(e.target),g=createGame([f.get('p0'),f.get('p1')],Number(f.get('target')),0);localStorage.setItem(PREF,JSON.stringify(g.players));put(g);}catch(e){$('#form-error').textContent=translateError(e.message);}});
+ $('#setup-form [name=target]')?.addEventListener('change',e=>rememberTarget(Number(e.target.value)));
+ $('#setup-form')?.addEventListener('submit',e=>{e.preventDefault();try{const f=new FormData(e.target),g=createGame([f.get('p0'),f.get('p1')],Number(f.get('target')),0);localStorage.setItem(PREF,JSON.stringify(g.players));rememberTarget(g.target);put(g);}catch(e){$('#form-error').textContent=translateError(e.message);}});
  $('#turn-form')?.addEventListener('submit',e=>{e.preventDefault();try{const f=new FormData(e.target),g=addTurn(currentGame(),{balls:Number(f.get('balls')),outcome:f.get('outcome'),warned:f.has('warned'),rebreak:f.has('rebreak'),note:f.get('note')});put(g);notify(g.status==='finished'?`${g.players[g.winner]} 獲勝，紀錄已保存。`:'已保存記錄。');}catch(e){$('#form-error').textContent=translateError(e.message);}});
  document.querySelectorAll('[data-delta]').forEach(b=>b.onclick=()=>{$('#balls').value=Math.max(0,Math.min(10000,Number($('#balls').value||0)+Number(b.dataset.delta)));});
  $('#outcome')?.addEventListener('change',extra);extra();
@@ -66,7 +69,7 @@ async function action(a){
  if(a==='target'){
   const g=currentGame();if(!g||g.status!=='active')return;
   modal(`<label>目標分數<input id="target-edit" type="number" min="1" max="10000" step="1" value="${g.target}"></label><p class="note">可縮短或延長比賽。調低後如有選手已達標，將以目前領先者結束比賽；雙方同分時須設定高於目前比分。</p><p class="error" id="target-error"></p><button class="btn primary" id="target-save">確認修改</button>`,'修改目標分數');
-  $('#target-save').onclick=()=>{try{const next=changeTarget(currentGame(),Number($('#target-edit').value));$('#modal').close();put(next);if(next.status==='finished')endGameDialog(next);else notify('目標分數已更新為 '+next.target+' 分。');}catch(e){$('#target-error').textContent=e.message;}};return;
+  $('#target-save').onclick=()=>{try{const next=changeTarget(currentGame(),Number($('#target-edit').value));rememberTarget(next.target);$('#modal').close();put(next);if(next.status==='finished')endGameDialog(next);else notify('目標分數已更新為 '+next.target+' 分。');}catch(e){$('#target-error').textContent=e.message;}};return;
  }
  if(a==='fullscreen'){try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{notify('此瀏覽器不支援全螢幕；記分板仍會自動配合視窗大小。');}return;}
  if(a==='swap'){swapped=!swapped;localStorage.setItem('straight-pool-swap',String(swapped));render();return;}
@@ -160,7 +163,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261122.24',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261122.25',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
