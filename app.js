@@ -1,8 +1,9 @@
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261122.17';
-import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.17';
-import {rulesPage,tableDiagram} from './rules.js?v=20261122.17';
-import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.17';
-import {matchHistoryPage} from './history.js?v=20261122.17';
+import {bindDeletion} from './deletion.js?v=20261122.18';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261122.18';
+import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.18';
+import {rulesPage,tableDiagram} from './rules.js?v=20261122.18';
+import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.18';
+import {matchHistoryPage} from './history.js?v=20261122.18';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -36,6 +37,14 @@ function render(){const route=location.hash.slice(1)||'score';document.body.clas
 function extra(){const select=$('#outcome');if(!select)return;const g=currentGame(),s=stateOf(g),o=select.value;$('#extra-options').innerHTML=o==='break-foul'?'<label class="checkline"><input type="checkbox" name="rebreak">對手要求原球員重新開球（不勾選則對手接收球位）</label>':(o==='foul'||o==='scratch')&&s.fouls[s.active]>=2?'<label class="checkline"><input type="checkbox" name="warned">這一桿前，已明確告知球員處於兩犯（勾選才追加扣 15 分）</label>':'';}
 function modal(html,title='比賽設定'){delete $('#modal').dataset.playerTone;$('#modal').innerHTML=`<div class="dialog-head"><h2>${title}</h2><button class="btn" data-close>關閉</button></div>${html}`;$('#modal').showModal();$('[data-close]').onclick=()=>$('#modal').close();}
 function bind(){
+ bindDeletion('games',{show:html=>modal(html,'刪除記錄'),notify,remove:async ids=>{
+  if(storageError)throw Error(storageError);
+  const before=games;games=games.filter(g=>!ids.includes(g.id));
+  if(!await save()){games=before;throw Error('save failed');}
+  if(ids.includes(current))current=null;
+  render();
+ }});
+
  bindPractice(render,notify);
  for(const [field,key] of [['history-from','from'],['history-to','to'],['history-player','player'],['history-opponent','opponent']]){document.getElementById(field)?.addEventListener('change',e=>{historyFilters[key]=e.target.value;render();});}
 
@@ -145,7 +154,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261122.17',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261122.18',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}

@@ -192,3 +192,10 @@ test('appearance labels remain distinct from restored estimated shot statistics'
  assert.match(scoringDialog(g,3),/本次出手次數（預估，可修改）/);
  assert.match(scoreboardPage(g),/第 1 次出場/);
 });
+test('history supports per-record and filtered bulk deletion controls',()=>{
+ const a=createGame(['甲','乙']),b=createGame(['丙','丁']);
+ const html=matchHistoryPage([a,b],{player:'甲'});
+ assert.match(html,/data-delete-all="games"/);assert.match(html,/data-delete-selected="games" disabled/);
+ assert.equal((html.match(/data-delete-check="games"/g)||[]).length,1);
+ assert.match(html,new RegExp('data-delete-id="'+a.id+'"'));assert.doesNotMatch(html,new RegExp('data-delete-id="'+b.id+'"'));
+});
