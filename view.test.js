@@ -12,7 +12,7 @@ test('board has 16 aligned ball rows and two independent scrollable history regi
 test('swap changes display order, never player identity, turn or score',()=>{
  const g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'miss',shots:6});const original=JSON.stringify(g);
  const html=scoreboardPage(g,{swapped:true});assert.ok(html.indexOf('<h1>乙</h1>')<html.indexOf('<h1>甲</h1>'));
- assert.equal(JSON.stringify(g),original);assert.match(html,/\(5／1／6\)/);
+ assert.equal(JSON.stringify(g),original);assert.doesNotMatch(html,/visit-summary/);assert.match(html,/>5<\/span>/);
 });
 test('picking five highlights exactly five options on the selected side',()=>{
  const html=scoreboardPage(createGame(['甲','乙']),{selection:{player:0,balls:5}});
@@ -190,7 +190,7 @@ test('appearance labels remain distinct from restored estimated shot statistics'
  const g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss',shots:4});
  const html=matchHistoryPage([g]);assert.match(html,/<th>出場數<\/th>/);assert.match(html,/<th>出手<\/th>/);assert.match(html,/出手次數預設為估算/);
  assert.match(scoringDialog(g,3),/本次出手次數（預估，可修改）/);
- assert.match(scoreboardPage(g),/第 1 次出場/);
+ assert.match(scoreboardPage(g),/class="visit-title">#1/);
 });
 test('history supports per-record and filtered bulk deletion controls',()=>{
  const a=createGame(['甲','乙']),b=createGame(['丙','丁']);
@@ -239,4 +239,15 @@ test('foul display cap still allows recovery of negative points using cumulative
  assert.match(scoreboardPage(g),/data-central-end="11"  aria-label/);
  g=addTurn(g,{balls:1,outcome:'win',rackEnd:11});
  assert.equal(g.status,'finished');assert.equal(stateOf(g).scores[1],10);
+});
+
+test('compact appearance entries use points, points-minus-penalty and points-S without old summaries',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:6,outcome:'miss'});
+ g=addTurn(g,{balls:5,outcome:'foul'});
+ g=addTurn(g,{balls:7,outcome:'safety'});
+ const html=scoreboardPage(g);
+ assert.match(html,/>6<\/span>/);assert.match(html,/>5-1<\/span>/);assert.match(html,/>7S<\/span>/);
+ assert.doesNotMatch(html,/visit-summary|得分／失誤／出手|<em>失誤不進/);
+ const opening=scoreboardPage(addTurn(createGame(['甲','乙']),{balls:0,outcome:'break-foul'}));
+ assert.match(opening,/>0-2<\/span>/);
 });

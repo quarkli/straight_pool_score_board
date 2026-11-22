@@ -37,3 +37,11 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 .score-option .option-dot,.record-dot{width:min(15px,70cqh,70cqw);height:auto;max-width:none;max-height:none;aspect-ratio:1 / 1;flex:none;box-sizing:border-box}
 @media(max-width:540px){.ball-center .pool-ball{width:min(24px,100cqh,100cqw)}}
 @media(max-height:650px){.ball-center .pool-ball{width:min(20px,100cqh,100cqw)}}
+
+/* Each appearance stays on one compact line, including continuation entries. */
+.visit-group{display:flex;align-items:center;gap:8px;padding:8px 0;flex-wrap:nowrap;min-width:0}
+.visit-title{margin:0;flex:0 0 auto;white-space:nowrap}
+.shot-tokens{flex:1;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;gap:5px}
+.shot-token{flex:none;white-space:nowrap;flex-wrap:nowrap;font-size:17px;padding:5px 7px;gap:0}
+.visit-time{flex:none;font-size:10px;color:#73836b;font-variant-numeric:tabular-nums;white-space:nowrap}
+@media(max-width:540px){.visit-group{gap:4px;padding:6px 0}.shot-token{font-size:14px;padding:4px}.visit-time{font-size:8px}}
