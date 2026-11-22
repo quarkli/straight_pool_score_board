@@ -1,9 +1,9 @@
-import {bindDeletion} from './deletion.js?v=20261122.20';
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261122.20';
-import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.20';
-import {rulesPage,tableDiagram} from './rules.js?v=20261122.20';
-import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.20';
-import {matchHistoryPage} from './history.js?v=20261122.20';
+import {bindDeletion} from './deletion.js?v=20261122.21';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261122.21';
+import {changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.21';
+import {rulesPage,tableDiagram} from './rules.js?v=20261122.21';
+import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.21';
+import {matchHistoryPage} from './history.js?v=20261122.21';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -62,6 +62,11 @@ function bind(){
 async function action(a){
  if(a==='load-demo'){await loadDemo();return;}
  if(a==='history-reset'){historyFilters={from:'',to:'',player:'',opponent:''};render();return;}
+ if(a==='target'){
+  const g=currentGame();if(!g||g.status!=='active')return;
+  modal(`<label>目標分數<input id="target-edit" type="number" min="1" max="10000" step="1" value="${g.target}"></label><p class="note">可縮短或延長比賽。調低後如有選手已達標，將以目前領先者結束比賽；雙方同分時須設定高於目前比分。</p><p class="error" id="target-error"></p><button class="btn primary" id="target-save">確認修改</button>`,'修改目標分數');
+  $('#target-save').onclick=()=>{try{const next=changeTarget(currentGame(),Number($('#target-edit').value));$('#modal').close();put(next);if(next.status==='finished')endGameDialog(next);else notify('目標分數已更新為 '+next.target+' 分。');}catch(e){$('#target-error').textContent=e.message;}};return;
+ }
  if(a==='fullscreen'){try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{notify('此瀏覽器不支援全螢幕；記分板仍會自動配合視窗大小。');}return;}
  if(a==='swap'){swapped=!swapped;localStorage.setItem('straight-pool-swap',String(swapped));render();return;}
  if(a==='clock'){const g=currentGame();if(g?.status==='active'){put(g.clock?.runningSince!=null?pauseClock(g):resumeClock(g));notify(g.clock?.runningSince!=null?'休息中，計時已暫停。':'繼續比賽，開始計時。');}return;}
@@ -154,7 +159,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261122.20',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261122.21',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}

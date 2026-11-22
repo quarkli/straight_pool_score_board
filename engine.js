@@ -15,8 +15,10 @@ export function selectOpeningPlayer(game,player){
  return g;
 }
 export function stateOf(game){
+ let target=game.events.find(e=>e.type==='target')?.previousTarget??game.target;
  const s={scores:[0,0],fouls:[0,0],active:game.breaker,opening:true,visits:[0,0],runs:[0,0],high:[0,0],balls:[0,0],penalties:[0,0],standard:[0,0],breaking:[0,0],three:[0,0],winner:null,rows:[],visitOpen:false,warned:[false,false]};
  for(const e of game.events){
+  if(e.type==='target'){target=e.target;if(Math.max(...s.scores)>=target)s.winner=s.scores[0]>s.scores[1]?0:1;continue;}
   if(e.type==='finish'){s.winner=e.winner;continue;}
   if(e.type==='stalemate'){s.active=e.breaker;s.opening=true;s.runs=[0,0];s.fouls=[0,0];s.warned=[false,false];s.visitOpen=false;continue;}
   const p=s.active;
@@ -33,7 +35,7 @@ export function stateOf(game){
   if(third)s.warned[p]=false;
   s.scores[p]-=penalty;s.penalties[p]+=penalty;
   s.rows.push({...e,player:p,visit:s.visits[p],penalty,third,total:s.scores[p],net:s.scores[p]-before});
-  if(s.scores[p]>=game.target){s.winner=p;}
+  if(s.scores[p]>=target){s.winner=p;}
   if(third){s.active=e.thirdChoice==='continue'?1-p:p;s.opening=e.thirdChoice!=='continue';s.runs[p]=0;s.visitOpen=false;}
   else if(e.outcome==='break-foul'&&e.rebreak){s.active=p;s.opening=true;s.runs[p]=0;s.visitOpen=false;}
   else if(e.outcome==='continue'||e.outcome==='win'){s.opening=false;}
@@ -69,7 +71,17 @@ export function finishGame(game,winner,reason='concession',now=Date.now()){
  if(game.status!=='active'||(![0,1].includes(winner)&&!(winner===null&&reason==='interrupted')))throw Error('Choose a winner for an active game.');
  const g=settleClock(game,now);if(g.clock)g.clock.runningSince=null;g.events.push({type:'finish',winner,reason,at:new Date(now).toISOString()});g.status='finished';g.finalized=true;g.winner=winner;g.reason=reason;g.endedAt=new Date(now).toISOString();return g;
 }
-export function undo(game){if(game.status==='finished'||game.finalized)throw Error('Finished games are read-only.');const g=structuredClone(game);g.events.pop();delete g.rackClearedAt;g.status='active';g.winner=null;delete g.endedAt;delete g.reason;if(g.clock){g.clock=settleClock(game).clock;g.clock.runningSince=null;}return g;}
+export function changeTarget(game,target,now=Date.now()){
+ if(game.status!=='active'||game.finalized)throw Error('比賽已結束，不能修改目標分數。');
+ if(!Number.isInteger(target)||target<1||target>10000)throw Error('目標分數須為 1–10,000 的整數。');
+ const scores=stateOf(game).scores;
+ if(scores[0]===scores[1]&&scores[0]>=target)throw Error('雙方同分，請將目標設為高於目前比分，繼續比賽決定勝負。');
+ if(target===game.target)return structuredClone(game);
+ const g=settleClock(game,now);g.events.push({type:'target',previousTarget:game.target,target,at:new Date(now).toISOString()});g.target=target;
+ if(Math.max(...scores)>=target){g.status='finished';g.finalized=true;g.winner=scores[0]>scores[1]?0:1;g.reason='target';g.endedAt=new Date(now).toISOString();if(g.clock)g.clock.runningSince=null;}
+ return g;
+}
+export function undo(game){if(game.status==='finished'||game.finalized)throw Error('Finished games are read-only.');const g=structuredClone(game);const removed=g.events.pop();if(removed?.type==='target')g.target=removed.previousTarget;delete g.rackClearedAt;g.status='active';g.winner=null;delete g.endedAt;delete g.reason;if(g.clock){g.clock=settleClock(game).clock;g.clock.runningSince=null;}return g;}
 export function validateHistory(data){
  if(!data||data.schemaVersion!==VERSION||!Array.isArray(data.games)||data.games.length>10000)throw Error('Unsupported JSON. Use a Straight Pool export (schemaVersion 1).');
  const ids=new Set();
@@ -78,14 +90,15 @@ export function validateHistory(data){
   if(typeof g.id!=='string'||g.id.length>100||ids.has(g.id)||!Array.isArray(g.events)||g.events.length>100000||!['active','finished'].includes(g.status)||!Number.isFinite(Date.parse(g.startedAt)))throw Error('Invalid game record.');
   if(g.clock&&(!Array.isArray(g.clock.elapsedMs)||g.clock.elapsedMs.length!==2||g.clock.elapsedMs.some(t=>!Number.isFinite(t)||t<0)||(g.clock.runningSince!==null&&(!Number.isFinite(g.clock.runningSince)||g.clock.runningSince<0))))throw Error('Invalid clock.');
   if(g.events.some(e=>(e.elapsedMs!=null&&(!Number.isFinite(e.elapsedMs)||e.elapsedMs<0))||(e.shots!=null&&(!Number.isInteger(e.shots)||e.shots<1||e.shots>100000))))throw Error('Invalid timing or shot count.');
-  ids.add(g.id);let replay={...g,clock:undefined,status:'active',winner:null,events:[]};
+  ids.add(g.id);let replay={...g,target:g.events.find(e=>e.type==='target')?.previousTarget??g.target,clock:undefined,finalized:false,status:'active',winner:null,events:[]};
   for(const e of g.events){
-   if(!e||!['turn','finish','stalemate'].includes(e.type))throw Error('Invalid game event.');
+   if(!e||!['turn','finish','stalemate','target'].includes(e.type))throw Error('Invalid game event.');
    if(e.type==='turn')replay=addTurn(replay,e);
+   else if(e.type==='target'){if(e.previousTarget!==replay.target)throw Error('Invalid target history.');replay=changeTarget(replay,e.target);}
    else if(e.type==='finish')replay=finishGame(replay,e.winner,e.reason);
    else{if(replay.status!=='active'||![0,1].includes(e.breaker))throw Error('Invalid stalemate.');replay.events.push(e);}
   }
-  if(g.status!==replay.status||g.winner!==replay.winner)throw Error('Game result does not match its scoring record.');
+  if(g.target!==replay.target||g.status!==replay.status||g.winner!==replay.winner)throw Error('Game result does not match its scoring record.');
   if(g.status==='finished')g.finalized=true;
  }
  return data.games;

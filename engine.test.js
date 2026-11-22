@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,clockTotals,pauseClock,resumeClock,visitRecords} from './engine.js';
+import {changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,clockTotals,pauseClock,resumeClock,visitRecords} from './engine.js';
 const start=(t=100)=>createGame(['甲','乙'],t);const turn=(g,balls,outcome='miss',options={})=>addTurn(g,{balls,outcome,...options});
 test('legal scoring, negative score and alternating visits',()=>{let g=turn(start(),8);g=turn(g,0,'scratch');const s=stateOf(g);assert.deepEqual(s.scores,[8,-1]);assert.deepEqual(s.visits,[1,1]);assert.equal(s.active,0);});
 test('a run spans continuation entries and racks without extra inning',()=>{let g=turn(start(),14,'continue');g=turn(g,14,'continue');g=turn(g,3);const s=stateOf(g);assert.equal(s.high[0],31);assert.equal(s.visits[0],1);assert.equal(s.scores[0],31);});
@@ -124,4 +124,16 @@ test('finished JSON round trips preserve read-only results, including legacy rec
  let g=finishGame(turn(start(),3),0);delete g.finalized;
  const [loaded]=validateHistory(JSON.parse(JSON.stringify({schemaVersion:1,games:[g]})));
  assert.equal(loaded.finalized,true);assert.equal(loaded.status,'finished');assert.throws(()=>undo(loaded),/read-only/);assert.throws(()=>turn(loaded,1));
+});
+test('target can be raised or reduced during a game without changing score or player',()=>{
+ const g=turn(start(),8),raised=changeTarget(g,150);assert.equal(raised.target,150);assert.equal(raised.status,'active');assert.equal(stateOf(raised).active,1);assert.deepEqual(stateOf(raised).scores,[8,0]);
+ const lower=changeTarget(raised,20);assert.equal(lower.status,'active');assert.equal(undo(lower).target,150);
+ assert.equal(validateHistory(JSON.parse(JSON.stringify({schemaVersion:1,games:[lower]})))[0].target,20);
+});
+test('lowering target to a reached score immediately finishes and JSON reload remains read-only',()=>{
+ const g=changeTarget(turn(start(),8),5);assert.equal(g.winner,0);assert.equal(g.status,'finished');assert.equal(g.clock.runningSince,null);
+ const [loaded]=validateHistory(JSON.parse(JSON.stringify({schemaVersion:1,games:[g]})));assert.equal(loaded.finalized,true);assert.equal(stateOf(loaded).winner,0);assert.throws(()=>changeTarget(loaded,200));
+});
+test('target changes reject invalid values and a tied finish',()=>{
+ let g=turn(start(),5);g=turn(g,5);assert.throws(()=>changeTarget(g,5),/同分/);assert.throws(()=>changeTarget(g,0));assert.throws(()=>changeTarget(g,3.5));
 });
