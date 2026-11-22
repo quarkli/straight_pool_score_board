@@ -1,7 +1,7 @@
-import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.9';
-import {rulesPage,tableDiagram} from './rules.js?v=20261122.9';
-import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.9';
-import {matchHistoryPage} from './history.js?v=20261122.9';
+import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.10';
+import {rulesPage,tableDiagram} from './rules.js?v=20261122.10';
+import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.10';
+import {matchHistoryPage} from './history.js?v=20261122.10';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -64,14 +64,16 @@ function endGameDialog(game,early=false){
  if(summaryTimeout){clearTimeout(summaryTimeout);summaryTimeout=null;}rackSummaryPending=null;
  const g=early?pauseClock(game):game;if(early)put(g);
  const scores=stateOf(g).scores,times=clockTotals(g);
- modal(`<p>${early?'選擇提前結束結果，或中斷比賽不判勝負。':`${esc(g.players[g.winner])} 獲勝！`}</p><h3>${esc(g.players[0])} ${scores[0]} : ${scores[1]} ${esc(g.players[1])}</h3><p>比賽用時：${times?duration(times[0]+times[1]):'未記錄'}</p>${early?`<label>比賽結果<select id="end-result"><option value="interrupted">中斷比賽（不判勝負）</option>${g.players.map((n,i)=>`<option value="${i}">${esc(n)} 獲勝</option>`).join('')}</select></label>`:''}<label>記錄處理<select id="end-save"><option value="save" selected>保存記錄（預設）</option><option value="discard">不保存記錄</option></select></label><p class="note">保存後可在對局歷史查看或匯出 JSON；不保存會移除此場紀錄。</p><button class="btn primary big-action" id="end-confirm">確認並保存記錄</button>`,'比賽結束');
- $('#end-save').onchange=()=>$('#end-confirm').textContent=$('#end-save').value==='save'?'確認並保存記錄':'確認，不保存記錄';
- $('#end-confirm').onclick=()=>{
-  const keep=$('#end-save').value==='save',result=$('#end-result')?.value;
+ modal(`<p>${early?'選擇提前結束結果，或中斷比賽不判勝負。':`${esc(g.players[g.winner])} 獲勝！`}</p><h3>${esc(g.players[0])} ${scores[0]} : ${scores[1]} ${esc(g.players[1])}</h3><p>比賽用時：${times?duration(times[0]+times[1]):'未記錄'}</p>${early?`<label>比賽結果<select id="end-result"><option value="interrupted">中斷比賽（不判勝負）</option>${g.players.map((n,i)=>`<option value="${i}">${esc(n)} 獲勝</option>`).join('')}</select></label>`:''}<p class="note">保存後可在對局歷史查看或匯出 JSON；不保存會移除此場紀錄。</p><div class="actions"><button class="btn primary" id="end-keep" autofocus>保存記錄</button><button class="btn" id="end-discard">不保存記錄</button></div>`,'比賽結束');
+ const complete=keep=>{
+  const result=$('#end-result')?.value;
   $('#modal').close();
   if(keep){put(early?finishGame(g,result==='interrupted'?null:Number(result),result==='interrupted'?'interrupted':'concession'):g);notify('比賽記錄已保存。');}
   else{games=games.filter(x=>x.id!==g.id);current=null;save();render();notify('本場已結束，不保存記錄。');}
  };
+ $('#end-keep').onclick=()=>complete(true);
+ $('#end-discard').onclick=()=>complete(false);
+ $('#end-keep').focus();
 }
 function updateClocks(){
  const now=new Date();if($('#wall-clock'))$('#wall-clock').textContent=now.toLocaleTimeString('zh-TW',{hour12:false});
@@ -134,7 +136,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261122.9',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261122.10',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
