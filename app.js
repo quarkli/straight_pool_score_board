@@ -1,7 +1,7 @@
-import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals} from './engine.js';
-import {rulesPage,tableDiagram} from './rules.js';
-import {scoreboardPage,scoringDialog,duration} from './scoreboard.js';
-import {matchHistoryPage} from './history.js';
+import {createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals} from './engine.js?v=20261122.3';
+import {rulesPage,tableDiagram} from './rules.js?v=20261122.3';
+import {scoreboardPage,scoringDialog,duration} from './scoreboard.js?v=20261122.3';
+import {matchHistoryPage} from './history.js?v=20261122.3';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -96,7 +96,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261122.3',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
