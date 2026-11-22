@@ -54,12 +54,13 @@ test('ten reproducible demo matches all finish at target 70 with valid clock and
  assert.ok(games.some(g=>stateOf(g).breaking.some(n=>n>0)));
 });
 
-test('before first recorded turn both sides can score; after handoff inactive buttons are hidden',()=>{
+test('both sides can start, then inactive scoring controls are replaced by saved score markers',()=>{
  const fresh=createGame(['甲','乙']);const initial=scoreboardPage(fresh);
  assert.equal((initial.match(/data-pick="\d+"[^>]*disabled/g)||[]).length,0);
  assert.equal((initial.match(/data-pick="\d+"[^>]*hidden/g)||[]).length,0);
  const g=addTurn(fresh,{balls:5,outcome:'miss',shots:6});const after=scoreboardPage(g);
- assert.equal((after.match(/data-pick="\d+"[^>]*hidden/g)||[]).length,16);
+ assert.equal((after.match(/data-pick=/g)||[]).length,16);
+ assert.equal((after.match(/class="record-dot"/g)||[]).length,5);
 });
 test('first scorer becomes breaker with all opening elapsed time and cannot change after start',()=>{
  let g=createGame(['甲','乙']);g.clock.elapsedMs=[4000,0];g.clock.runningSince=1000;
@@ -79,4 +80,19 @@ test('score buttons contain white dots without visible numbers',()=>{
  const html=scoreboardPage(createGame(['甲','乙']));
  assert.equal((html.match(/class="option-dot"/g)||[]).length,32);
  assert.ok(!html.includes('<span>分</span></button>'));
+});
+
+test('inactive saved dots survive a zero-point handoff at the end of the same inning',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:7,outcome:'continue',shots:7});
+ g=addTurn(g,{balls:0,outcome:'safety',shots:1});
+ const html=scoreboardPage(g);
+ assert.equal((html.match(/class="record-dot"/g)||[]).length,7);
+ assert.equal((html.match(/data-pick=/g)||[]).length,16);
+ assert.ok(!html.includes('data-pick="0" data-player="0"'));
+});
+test('completed games keep both player score dots and expose no scoring buttons',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'miss',shots:6});
+ g=addTurn(g,{balls:3,outcome:'miss',shots:4});g=finishGame(g,0);
+ const html=scoreboardPage(g);assert.equal((html.match(/class="record-dot"/g)||[]).length,8);
+ assert.equal((html.match(/data-pick=/g)||[]).length,0);
 });
