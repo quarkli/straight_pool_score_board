@@ -53,3 +53,27 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 .match-toolbar .live-wall-clock{justify-self:end;font-size:25px;font-weight:650;white-space:nowrap}
 @media(max-width:900px){.match-toolbar .target-tag{font-size:17px}.match-toolbar .target-tag b{font-size:28px}.match-toolbar .live-wall-clock{font-size:21px}}
 @media(max-width:540px){.match-toolbar{gap:3px}.match-toolbar .match-tools{gap:2px}.match-toolbar .target-tag{font-size:13px;padding:0 3px}.match-toolbar .target-tag b{font-size:24px}.match-toolbar .live-wall-clock{font-size:16px}}
+
+/* Landscape uses two columns of eight balls to provide larger touch targets. */
+@media(orientation:landscape){
+ .match-score{font-size:46px}
+ .match-arena{grid-template-columns:minmax(0,1fr) 290px minmax(0,1fr);gap:14px}
+ .ball-rows{grid-auto-flow:column;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));gap:4px 8px}
+ .ball-row{grid-template-columns:minmax(0,1fr) 50px minmax(0,1fr);gap:3px}
+ .ball-center .pool-ball{width:min(40px,100cqh,100cqw)}
+ .ball-center .pool-ball>span{font-size:clamp(9px,32cqh,13px)}
+ .ball-score-button{border-radius:6px;touch-action:manipulation}
+ .ball-score-button:not(:disabled):hover{background:#ffffff15}
+}
+@media(orientation:landscape) and (max-height:650px){.match-score{font-size:32px}.match-arena{grid-template-columns:minmax(0,1fr) 260px minmax(0,1fr);gap:8px}}
+@media(orientation:landscape) and (max-height:540px){
+ body.score-screen>header{display:none}
+ body.score-screen main{height:100dvh;padding:4px 8px}
+ .score-shell{grid-template-rows:34px 60px 20px minmax(0,1fr) 32px;gap:3px}
+ .match-player{padding:4px 10px}.match-player-title h1{font-size:15px}.match-score{font-size:29px}
+ .player-clock span,.foul-indicator span{display:none}.player-clock b,.foul-indicator b{font-size:13px}
+ .match-player-line{gap:8px}.match-middle>span{display:none}.swap-button{width:32px;height:32px;font-size:22px}
+ .ball-picker{grid-template-rows:14px minmax(0,1fr) 12px;padding:3px 6px}
+ .record-heading{padding:5px 8px}.record-heading>span{display:none}.match-status{font-size:10px}
+ .match-bottom .btn{min-height:28px;padding:4px 8px}.match-toolbar .target-tag b{font-size:26px}.match-toolbar .live-wall-clock{font-size:20px}
+}

@@ -1,0 +1,26 @@
+{
+  "id": "./",
+  "name": "14.1 連續撞球計分室",
+  "short_name": "14.1 計分板",
+  "description": "連續撞球記分、單人練習、規則圖解與對局統計",
+  "lang": "zh-Hant",
+  "start_url": "./?source=pwa#score",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#edf1ed",
+  "theme_color": "#102c27",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
