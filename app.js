@@ -1,9 +1,9 @@
-import {bindDeletion} from './deletion.js?v=20261122.21';
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261122.21';
-import {changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.21';
-import {rulesPage,tableDiagram} from './rules.js?v=20261122.21';
-import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.21';
-import {matchHistoryPage} from './history.js?v=20261122.21';
+import {bindDeletion} from './deletion.js?v=20261122.22';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261122.22';
+import {changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261122.22';
+import {rulesPage,tableDiagram} from './rules.js?v=20261122.22';
+import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261122.22';
+import {matchHistoryPage} from './history.js?v=20261122.22';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -62,6 +62,7 @@ function bind(){
 async function action(a){
  if(a==='load-demo'){await loadDemo();return;}
  if(a==='history-reset'){historyFilters={from:'',to:'',player:'',opponent:''};render();return;}
+ if(a==='match-stats'){const g=currentGame();if(g)modal(matchStats(g),'本場雙方統計');return;}
  if(a==='target'){
   const g=currentGame();if(!g||g.status!=='active')return;
   modal(`<label>目標分數<input id="target-edit" type="number" min="1" max="10000" step="1" value="${g.target}"></label><p class="note">可縮短或延長比賽。調低後如有選手已達標，將以目前領先者結束比賽；雙方同分時須設定高於目前比分。</p><p class="error" id="target-error"></p><button class="btn primary" id="target-save">確認修改</button>`,'修改目標分數');
@@ -80,7 +81,7 @@ function endGameDialog(game,early=false){
  if(summaryTimeout){clearTimeout(summaryTimeout);summaryTimeout=null;}rackSummaryPending=null;
  const g=early?pauseClock(game):game;if(early)put(g);
  const scores=stateOf(g).scores,times=clockTotals(g);
- modal(`<p>${early?'選擇提前結束結果，或中斷比賽不判勝負。':`${esc(g.players[g.winner])} 獲勝！`}</p><h3>${esc(g.players[0])} ${scores[0]} : ${scores[1]} ${esc(g.players[1])}</h3><p>比賽用時：${times?duration(times[0]+times[1]):'未記錄'}</p>${early?`<label>比賽結果<select id="end-result"><option value="interrupted">中斷比賽（不判勝負）</option>${g.players.map((n,i)=>`<option value="${i}">${esc(n)} 獲勝</option>`).join('')}</select></label>`:''}<p class="note">保存後可在對局歷史查看或匯出 JSON；不保存會移除此場紀錄。</p><div class="actions"><button class="btn primary" id="end-keep" autofocus>保存記錄</button><button class="btn" id="end-discard">不保存記錄</button></div>`,'比賽結束');
+ modal(`<p>${early?'選擇提前結束結果，或中斷比賽不判勝負。':`${esc(g.players[g.winner])} 獲勝！`}</p><h3>${esc(g.players[0])} ${scores[0]} : ${scores[1]} ${esc(g.players[1])}</h3><p>比賽用時：${times?duration(times[0]+times[1]):'未記錄'}</p>${early?`<label>比賽結果<select id="end-result"><option value="interrupted">中斷比賽（不判勝負）</option>${g.players.map((n,i)=>`<option value="${i}">${esc(n)} 獲勝</option>`).join('')}</select></label>`:''}${matchStats(g)}<p class="note">保存後可在對局歷史查看或匯出 JSON；不保存會移除此場紀錄。</p><div class="actions"><button class="btn primary" id="end-keep" autofocus>保存記錄</button><button class="btn" id="end-discard">不保存記錄</button></div>`,'比賽結束');
  const complete=keep=>{
   const result=$('#end-result')?.value;
   $('#modal').close();
@@ -159,7 +160,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261122.21',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261122.22',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}

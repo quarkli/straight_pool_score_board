@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {createGame,addTurn,finishGame,pauseClock,playerStats,selectOpeningPlayer,stateOf,rackState,undo,resumeClock} from './engine.js';
-import {scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js';
+import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js';
 import {filterHistory,matchHistoryPage,localDate} from './history.js';
 test('board has 16 aligned ball rows and two independent scrollable history regions',()=>{
  const g=createGame(['甲','乙']);const html=scoreboardPage(g);
@@ -205,4 +205,12 @@ test('completed scoreboard reuses finish button and disables score changes',()=>
  assert.match(html,/data-action="undo" disabled/);
  assert.match(html,/data-action="finish">結束比賽/);
  assert.doesNotMatch(html,/>再來一場<|>結束<\/button>/);
+});
+test('scoreboard opens current-match statistics and uses only this game for both players',()=>{
+ let g=addTurn(createGame(['本場甲','本場乙']),{balls:3,outcome:'miss',shots:4});
+ g=addTurn(g,{balls:2,outcome:'safety',shots:3});
+ const html=matchStats(g);assert.match(html,/本場甲/);assert.match(html,/本場乙/);assert.match(html,/淨得分<\/th><td>3<\/td><td>2<\/td>/);assert.match(html,/出場數<\/th><td>1<\/td><td>1<\/td>/);assert.match(html,/安全球<\/th><td>0<\/td><td>1<\/td>/);
+ assert.match(scoreboardPage(g),/data-action="match-stats">統計分析/);
+ assert.doesNotMatch(scoreboardPage(g),/href="#stats">統計分析/);
+ assert.match(matchStats(finishGame(g,0)),/比賽結束 · 唯讀紀錄/);
 });
