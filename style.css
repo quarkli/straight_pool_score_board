@@ -26,3 +26,5 @@ body.score-screen{height:100dvh;overflow:hidden;background:#edf1ed}body.score-sc
 dialog[data-player-tone]{background:var(--player-tint);border:2px solid var(--player-edge)}
 dialog[data-player-tone] .reason-button{background:#ffffffb8;border-color:var(--player-edge);color:var(--player-deep)}
 dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
+
+.practice-board{background:#e5efff}.practice-balls{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}.practice-ball{border:1px solid #91a9c8;border-radius:50%;padding:5px;background:white}.practice-ball:disabled{opacity:.3;cursor:not-allowed}.practice-records{max-height:300px;overflow:auto;line-height:1.8;margin-top:16px}.practice-records>div{padding:8px;border-bottom:1px solid #ccd6df}body:not(.score-screen) nav{flex-wrap:wrap}
