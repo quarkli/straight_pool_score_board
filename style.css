@@ -133,3 +133,9 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 .score-record[style*="grid-column:3"]{transform:translateX(-8%)}
 .score-record .record-dot{width:var(--dot-size)}
 .turn-mark .mark-foul,.turn-mark .mark-safety{width:calc(50% - var(--dot-size)/2 - var(--mark-gap));overflow:visible}
+
+/* Scale annotations with the row instead of capping large portrait displays at 17px. */
+.score-record{--annotation-size:min(36px,78cqh,36cqw)}
+@media(orientation:portrait) and (min-width:700px){
+ .match-arena{grid-template-columns:minmax(0,1fr) clamp(230px,36vw,440px) minmax(0,1fr)}
+}
