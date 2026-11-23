@@ -361,3 +361,10 @@ test('safety and foul annotations have separate lanes so they cannot move the ce
  let g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'safety'});g=addTurn(g,{balls:0,outcome:'miss'});g=addTurn(g,{balls:0,outcome:'foul'});
  const html=scoreboardPage(g);assert.match(html,/class="mark-foul"[^>]*>×<\/span>/);assert.match(html,/class="mark-safety"[^>]*>△<\/span>/);assert.equal((html.match(/class="record-dot"/g)||[]).length,5);
 });
+
+test('zero handover dash is omitted beside an owned scoring dot but retained without ownership',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'safety'});g=addTurn(g,{balls:0,outcome:'safety'});g=addTurn(g,{balls:0,outcome:'safety'});
+ const html=scoreboardPage(g),owned=html.split('data-record-player="0" data-record-score="3"')[1].split('</span></span></span>')[0],other=html.split('data-record-player="1" data-record-score="3"')[1].split('</span></span></span>')[0];
+ assert.match(owned,/class="record-dot"/);assert.match(owned,/class="mark-zero"><\/span>/);assert.match(owned,/>△’/);
+ assert.match(other,/class="mark-zero">−<\/span>/);assert.doesNotMatch(other,/class="record-dot"/);
+});
