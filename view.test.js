@@ -333,7 +333,7 @@ test('third foul with no scored balls still leaves the cue ball unmarked',()=>{
 test('repeated zero-point safeties use prime marks instead of repeated triangles and undo restores count',()=>{
  let g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'miss',rackEnd:5});
  for(let i=0;i<3;i++){g=addTurn(g,{balls:0,outcome:'safety'});if(i<2)g=addTurn(g,{balls:0,outcome:'miss'});}
- let html=scoreboardPage(g);assert.match(html,/aria-label="安全球3次">−△’’<\/span>/);assert.doesNotMatch(html,/>−△△/);assert.equal((html.match(/class="record-dot"/g)||[]).length,5);
+ let html=scoreboardPage(g);assert.match(html,/aria-label="安全球3次">−△’<\/span>/);assert.doesNotMatch(html,/>−△△/);assert.equal((html.match(/class="record-dot"/g)||[]).length,5);
  g=undo(g);html=scoreboardPage(g);assert.match(html,/aria-label="安全球2次">−△’<\/span>/);
 });
 test('repeated zero-point fouls use prime marks until third-foul x3 replaces them',()=>{

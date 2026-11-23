@@ -1,4 +1,4 @@
-import {stateOf,clockTotals,visitRecords,rackState,tacticalStats} from './engine.js?v=20261123.42';
+import {stateOf,clockTotals,visitRecords,rackState,tacticalStats} from './engine.js?v=20261123.43';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function duration(ms){if(ms==null)return '未記錄';const sec=Math.floor(Math.max(0,ms)/1000);return `${Math.floor(sec/3600).toString().padStart(2,'0')}:${Math.floor(sec%3600/60).toString().padStart(2,'0')}:${(sec%60).toString().padStart(2,'0')}`;}
 const colors=['#fff','#e9b825','#2467be','#c73e38','#6947a3','#e97925','#277e5c','#973e46','#182123','#e9b825','#2467be','#c73e38','#6947a3','#e97925','#277e5c','#973e46'];
@@ -14,7 +14,7 @@ function pickerCell(game,player,n,side,{unstarted,done,paused,rack,selection}){
   if(end>0&&symbol&&r.player===player&&end===n){if(r.third){marks.splice(0,marks.length,...marks.filter(m=>m==='△'),'x3');}else marks.push(symbol);}
  }
  const groups=[];for(const symbol of marks){const last=groups.at(-1);if(last?.symbol===symbol)last.count++;else groups.push({symbol,count:1});}
- const markText=groups.map(m=>m.symbol+'’'.repeat(m.count-1)).join('');
+ const markText=groups.map(m=>m.symbol+(m.count>1?'’':'')).join('');
  const markLabel=groups.map(m=>(m.symbol==='△'?'安全球':m.symbol==='x3'?'連續三犯':'犯規')+(m.count>1?m.count+'次':'')).join('、');
  const annotation=marks.length||zeroHandover?`<span class="turn-mark" style="--mark-chars:${Math.max(1,markText.length+(zeroHandover?1:0))}" aria-label="${markLabel||'零分換手'}">${zeroHandover?'−':''}${markText}</span>`:'';
  if(!unstarted){
