@@ -143,12 +143,14 @@ test('rack ownership remains scattered and safety marks last scored ball only',(
  assert.equal((html.match(/class="turn-mark"/g)||[]).length,1);
  assert.equal((html.match(/data-pick=/g)||[]).length,0);
 });
-test('zero scoring safety and foul leave neither dots nor handover marks',()=>{
+test('zero scoring safety and foul mark the cue-ball position without score dots',()=>{
  let g=addTurn(createGame(['甲','乙']),{balls:0,outcome:'safety'});
  g=addTurn(g,{balls:0,outcome:'foul'});
  const html=scoreboardPage(g);
  assert.equal((html.match(/class="record-dot"/g)||[]).length,0);
- assert.equal((html.match(/class="turn-mark"/g)||[]).length,0);
+ assert.equal((html.match(/class="turn-mark"/g)||[]).length,2);
+ assert.match(html,/data-record-player="0" data-record-score="0"[^]*?aria-label="安全球">△/);
+ assert.match(html,/data-record-player="1" data-record-score="0"[^]*?aria-label="犯規">×/);
 });
 test('interrupted games preserve scores and timing without a winner or win-rate impact',()=>{
  let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss',rackEnd:3});
@@ -277,4 +279,15 @@ test('ready board replaces setup with editable names and start button while all 
  assert.match(html,/data-action="start"/);assert.doesNotMatch(html,/setup-form/);assert.equal((html.match(/data-edit-player=/g)||[]).length,2);
  assert.equal((html.match(/data-pick="\d+"[^>]*disabled/g)||[]).length,32);
  assert.match(html,/data-action="clock" disabled/);assert.match(html,/data-handicap-player="0"[^>]*disabled/);
+});
+
+test('zero-point handover annotates the current ball on the shooters side without claiming ownership',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss',rackEnd:3});
+ g=addTurn(g,{balls:0,outcome:'safety'});
+ let html=scoreboardPage(g),cell=html.match(/<span class="score-record mark-only"[^>]*data-record-player="1" data-record-score="3"[^]*?<\/span><\/span>/)[0];
+ assert.match(cell,/>△<\/span>/);assert.doesNotMatch(cell,/record-dot/);assert.equal((html.match(/class="record-dot"/g)||[]).length,3);
+ g=addTurn(g,{balls:0,outcome:'foul'});html=scoreboardPage(g);assert.equal((html.match(/class="record-dot"/g)||[]).length,3);
+ assert.match(html,/data-record-player="0" data-record-score="3"[^]*?aria-label="犯規">×/);
+ const reversed=scoreboardPage(g,{swapped:true});assert.match(reversed,/class="score-record mark-only" style="grid-column:1" data-record-player="1" data-record-score="3"/);
+ g=undo(g);html=scoreboardPage(g);assert.doesNotMatch(html,/aria-label="犯規">×/);assert.match(html,/aria-label="安全球">△/);
 });
