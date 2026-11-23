@@ -1,8 +1,20 @@
-import {stateOf,clockTotals,visitRecords,rackState,tacticalStats} from './engine.js?v=20261123.48';
+import {stateOf,clockTotals,visitRecords,rackState,tacticalStats} from './engine.js?v=20261123.49';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function duration(ms){if(ms==null)return '未記錄';const sec=Math.floor(Math.max(0,ms)/1000);return `${Math.floor(sec/3600).toString().padStart(2,'0')}:${Math.floor(sec%3600/60).toString().padStart(2,'0')}:${(sec%60).toString().padStart(2,'0')}`;}
 const colors=['#fff','#e9b825','#2467be','#c73e38','#6947a3','#e97925','#277e5c','#973e46','#182123','#e9b825','#2467be','#c73e38','#6947a3','#e97925','#277e5c','#973e46'];
-export function ball(n){return `<span class="pool-ball ${n>8?'striped':''} ${n===0?'cue-ball':''}" style="--ball-color:${colors[n]}"><span>${n||'<i></i>'}</span></span>`;}
+export function ball(n){
+ const stripe=n>8?`<path d="M1 8h30v16H1z" fill="${colors[n]}"/>`:`<circle cx="16" cy="16" r="15" fill="${colors[n]}"/>`;
+ const face=n===0?'<circle cx="18" cy="14" r="1.8" fill="#bc5348"/>':`<circle cx="16" cy="16" r="7" fill="#fffbed"/><text x="16" y="20" text-anchor="middle" font-size="11" font-weight="800" fill="#243124">${n}</text>`;
+ return `<svg class="pool-ball-svg ${n>8?'striped':''} ${n===0?'cue-ball':''}" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="15" fill="${n>8?'#f4f0df':colors[n]}"/>${stripe}<circle cx="16" cy="16" r="15" fill="none" stroke="#13241d" stroke-opacity=".22"/><ellipse cx="11" cy="8" rx="6" ry="3.5" fill="#fff" opacity=".28"/>${face}</svg>`;
+}
+function dotSvg(){return '<svg class="record-dot" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8.5" fill="#fff"/><circle cx="10" cy="10" r="8" fill="none" stroke="#fff" stroke-opacity=".35"/></svg>';}
+function markSvg(kind,plural=false){
+ const prime=plural?'<path d="M25 3l-2.5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>':'';
+ if(kind==='safety')return `<svg class="mark-icon mark-safety" viewBox="0 0 28 24" aria-hidden="true" focusable="false"><path d="M4 20L13 4l9 16z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>${prime}</svg>`;
+ if(kind==='third')return '<svg class="mark-icon mark-foul mark-third" viewBox="0 0 38 24" aria-hidden="true" focusable="false"><path d="M3 5l12 14M15 5L3 19" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M22 6c2-3 9-2 9 2 0 2-2 3-5 3 4 0 6 2 6 4 0 5-8 6-11 2" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+ return `<svg class="mark-icon mark-foul" viewBox="0 0 28 24" aria-hidden="true" focusable="false"><path d="M4 5l15 14M19 5L4 19" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>${prime}</svg>`;
+}
+function zeroSvg(){return '<svg class="mark-icon mark-zero" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';}
 const reasonNames={miss:'失誤不進',safety:'安全球',foul:'犯規',scratch:'洗袋', 'break-foul':'開球犯規',continue:'繼續',win:'獲勝'};
 function history(g,p){const visits=visitRecords(g,p);return `<div class="shot-history" role="region" tabindex="0" aria-label="${esc(g.players[p])} 的出場紀錄">${visits.length?visits.map(v=>`<section class="visit-group"><span class="visit-title">#${v.visit}</span><div class="shot-tokens">${v.rows.map(r=>{const label=`${r.balls}${r.penalty?'-'+r.penalty:r.outcome==='safety'?'S':''}`;return `<span class="shot-token ${r.penalty?'penalized':''}" aria-label="${r.balls} 分，${esc(reasonNames[r.outcome])}${r.penalty?'，扣 '+r.penalty+' 分':''}" title="${esc(reasonNames[r.outcome])} · ${r.shots??'未記錄'} 次出手 · ${duration(r.elapsedMs)}">${label}</span>`;}).join('')}</div><span class="visit-time">${v.timeKnown?duration(v.elapsedMs):'—'}</span></section>`).join(''):'<div class="history-empty">等待第一筆記錄<span>每次得分，都留在這裡。</span></div>'}</div>`;}
 function pickerCell(game,player,n,side,{unstarted,done,paused,rack,selection}){
@@ -14,20 +26,20 @@ function pickerCell(game,player,n,side,{unstarted,done,paused,rack,selection}){
   if(end>0&&symbol&&r.player===player&&end===n){if(r.third){marks.splice(0,marks.length,...marks.filter(m=>m==='△'),'x3');}else marks.push(symbol);}
  }
  const groups=[];for(const symbol of marks){const last=groups.at(-1);if(last?.symbol===symbol)last.count++;else groups.push({symbol,count:1});}
- const markText=groups.map(m=>m.symbol+(m.count>1?'’':'')).join('');
  const markLabel=groups.map(m=>(m.symbol==='△'?'安全球':m.symbol==='x3'?'連續三犯':'犯規')+(m.count>1?m.count+'次':'')).join('、');
  const safetyCount=marks.filter(m=>m==='△').length,foulCount=marks.filter(m=>m==='×').length;
- const safetyText=safetyCount?'△'+(safetyCount>1?'’':''):'',foulText=marks.includes('x3')?'x3':foulCount?'×'+(foulCount>1?'’':''):'';
- const annotation=marks.length||zeroHandover?`<span class="turn-mark" aria-label="${markLabel||'零分換手'}"><span class="mark-foul" style="--mark-chars:${Math.max(1,foulText.length)}">${foulText}</span><span class="mark-zero">${zeroHandover&&rack.owners[n]!==player?'−':''}</span><span class="mark-safety" style="--mark-chars:${Math.max(1,safetyText.length)}">${safetyText}</span></span>`:'';
+ const foulMark=marks.includes('x3')?markSvg('third'):foulCount?markSvg('foul',foulCount>1):'';
+ const safetyMark=safetyCount?markSvg('safety',safetyCount>1):'';
+ const annotation=marks.length||zeroHandover?`<span class="turn-mark" aria-label="${markLabel||'零分換手'}">${foulMark}${zeroHandover&&rack.owners[n]!==player?zeroSvg():''}${safetyMark}</span>`:'';
 
  if(!unstarted){
   const owner=n>0?rack.owners[n]:null;
   const preview=selection?.player===player&&n>rack.count&&n<=selection.end;
-  return owner===player||preview||annotation?`<span class="score-record${owner===player||preview?'':' mark-only'}" style="grid-column:${column}" data-record-player="${player}" data-record-score="${n}" role="img" aria-label="${esc(game.players[player])} ${owner===player||preview?'已記錄第 '+n+' 顆進球':'第 '+n+' 球位置，零分換手'}${marks.length?'，'+markLabel:''}">${owner===player||preview?'<span class="record-dot" aria-hidden="true"></span>':''}${annotation}</span>`:'';
+  return owner===player||preview||annotation?`<span class="score-record${owner===player||preview?'':' mark-only'}" style="grid-column:${column}" data-record-player="${player}" data-record-score="${n}" role="img" aria-label="${esc(game.players[player])} ${owner===player||preview?'已記錄第 '+n+' 顆進球':'第 '+n+' 球位置，零分換手'}${marks.length?'，'+markLabel:''}">${owner===player||preview?dotSvg():''}${annotation}</span>`:'';
  }
  if(n>0&&n>game.target-stateOf(game).scores[player])return '';
  const selected=selection?.player===player&&((n===0&&selection.balls===0)||(n>0&&n<=selection.balls));
- return `<button class="score-option ${selected?'chosen':''}" data-pick="${n}" data-player="${player}" style="grid-column:${column}" aria-label="${esc(game.players[player])} 得 ${n} 分" aria-pressed="${!!selected}" ${paused||done?'disabled':''}><span class="option-dot" aria-hidden="true"></span></button>`;
+ return `<button class="score-option ${selected?'chosen':''}" data-pick="${n}" data-player="${player}" style="grid-column:${column}" aria-label="${esc(game.players[player])} 得 ${n} 分" aria-pressed="${!!selected}" ${paused||done?'disabled':''}><svg class="option-dot" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/></svg></button>`;
 }
 export function scoreboardPage(g,{swapped=false,selection=null}={}){
  const ready=g.status==='ready';

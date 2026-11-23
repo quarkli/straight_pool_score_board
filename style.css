@@ -142,3 +142,21 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 /* Anchor by the text edge so larger multi-character marks cannot touch the dot. */
 .turn-mark .mark-foul{left:auto;right:calc(50% + var(--dot-size)/2 + 3px);width:max-content}
 .turn-mark .mark-safety{right:auto;left:calc(50% + var(--dot-size)/2 + 3px);width:max-content}
+
+/* Vector scoring artwork: one square viewBox prevents responsive rows from
+   stretching balls or white score discs into ellipses. */
+.pool-ball-svg{display:block;width:min(100cqh,100cqw);height:auto;aspect-ratio:1/1;overflow:visible;filter:drop-shadow(0 1px 2px #0005);flex:none}
+.ball-center .pool-ball-svg{width:min(100cqh,100cqw)}
+.selected-balls .pool-ball-svg{width:32px;height:32px}
+.option-dot,.record-dot{display:block;width:var(--dot-size, min(19px,70cqh,34cqw));height:auto;aspect-ratio:1/1;overflow:visible;flex:none}
+.option-dot circle{fill:transparent;stroke:#fff;stroke-width:2.2}
+.score-option.chosen .option-dot circle{fill:#fff}
+.score-option:not(:disabled):hover .option-dot circle{fill:#ffffff25}
+.score-record .record-dot{width:var(--dot-size);grid-area:1/1;justify-self:center;filter:drop-shadow(0 0 3px #ffffff40)}
+.score-record .turn-mark,.score-record.mark-only .turn-mark{position:absolute;inset:0;display:block;pointer-events:none;color:#fff}
+.turn-mark .mark-icon{position:absolute;top:50%;display:block;width:auto;height:min(36px,78cqh);max-width:38cqw;transform:translateY(-50%);overflow:visible}
+.turn-mark .mark-foul{left:auto;right:calc(50% + var(--dot-size)/2 + 3px)}
+.turn-mark .mark-safety{right:auto;left:calc(50% + var(--dot-size)/2 + 3px)}
+.turn-mark .mark-zero{left:50%;right:auto;top:84%;width:min(20px,30cqw);height:min(20px,45cqh);transform:translate(-50%,-50%)}
+.score-record.mark-only .turn-mark .mark-zero{top:50%}
+@media(max-width:540px){.selected-balls .pool-ball-svg{width:28px;height:28px}}
