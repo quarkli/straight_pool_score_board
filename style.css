@@ -139,3 +139,6 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 @media(orientation:portrait) and (min-width:700px){
  .match-arena{grid-template-columns:minmax(0,1fr) clamp(230px,36vw,440px) minmax(0,1fr)}
 }
+/* Anchor by the text edge so larger multi-character marks cannot touch the dot. */
+.turn-mark .mark-foul{left:auto;right:calc(50% + var(--dot-size)/2 + 3px);width:max-content}
+.turn-mark .mark-safety{right:auto;left:calc(50% + var(--dot-size)/2 + 3px);width:max-content}
