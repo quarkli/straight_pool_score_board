@@ -13,3 +13,22 @@ test('live practice analysis includes active scoring, excludes other players and
  current=practiceRecord(current,2,'foul',3,'',4000);a=practiceAnalysis([saved,current,other],'甲');assert.equal(a.total,10);assert.equal(a.metrics[1].points,6);assert.equal(a.metrics[1].high,7);
  current=practiceUndo(current,4500);a=practiceAnalysis([saved,current,other],'甲');assert.equal(a.total,8);assert.equal(a.shots,9);assert.equal(a.time,3000);
 });
+
+test('practice run averages include zero runs and the live unfinished run without splitting reracks',()=>{
+ let s=practiceRecord(session(),14,'continue',14,'',2000);
+ s=practiceRecord(s,3,'miss',4,'',3000);
+ s=practiceRecord(s,0,'foul',1,'',4000);
+ s=practiceRecord(s,5,'continue',5,'',5000);
+ const m=practiceMetrics(s);assert.equal(m.high,17);assert.equal(m.runCount,3);assert.equal(m.average,22/3);assert.equal(m.openingEvaluated,2);assert.equal(m.openingSuccess,2);
+ const a=practiceAnalysis([s],'甲');assert.equal(a.runCount,3);assert.equal(a.total/a.shots,22/24);assert.equal(a.misses/a.shots,1/24);assert.equal(a.time/a.shots,4000/24);
+});
+test('opening analysis evaluates only the first attack of each rack and recomputes after undo',()=>{
+ let s=practiceRecord(session(),0,'miss',1,'',2000);
+ s=practiceRecord(s,14,'continue',14,'',3000);
+ s=practiceRecord(s,1,'continue',1,'',4000);
+ assert.equal(practiceMetrics(s).openingEvaluated,1);assert.equal(practiceMetrics(s).openingSuccess,0);
+ s=practiceRecord(s,1,'foul',2,'',5000);
+ assert.equal(practiceMetrics(s).openingEvaluated,2);assert.equal(practiceMetrics(s).openingSuccess,1);
+ s=practiceUndo(s,5500);assert.equal(practiceMetrics(s).openingEvaluated,1);
+ assert.equal(practiceMetrics({...s,status:'finished'}).openingEvaluated,2);
+});
