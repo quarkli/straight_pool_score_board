@@ -3,9 +3,9 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 export function duration(ms){if(ms==null)return '未記錄';const sec=Math.floor(Math.max(0,ms)/1000);return `${Math.floor(sec/3600).toString().padStart(2,'0')}:${Math.floor(sec%3600/60).toString().padStart(2,'0')}:${(sec%60).toString().padStart(2,'0')}`;}
 const colors=['#fff','#e9b825','#2467be','#c73e38','#6947a3','#e97925','#277e5c','#973e46','#182123','#e9b825','#2467be','#c73e38','#6947a3','#e97925','#277e5c','#973e46'];
 export function ball(n){
- const stripe=n>8?`<path d="M1 8h30v16H1z" fill="${colors[n]}" clip-path="url(#ball-clip-${n})"/>`:`<circle cx="16" cy="16" r="15" fill="${colors[n]}"/>`;
+ const stripe=n>8?`<path d="M3.3114 8H28.6886A15 15 0 0 1 28.6886 24H3.3114A15 15 0 0 1 3.3114 8Z" fill="${colors[n]}"/>`:`<circle cx="16" cy="16" r="15" fill="${colors[n]}"/>`;
  const face=n===0?'<circle cx="18" cy="14" r="1.8" fill="#bc5348"/>':`<circle cx="16" cy="16" r="7" fill="#fffbed"/><text x="16" y="20" text-anchor="middle" font-size="11" font-weight="800" fill="#243124">${n}</text>`;
- return `<svg class="pool-ball-svg ${n>8?'striped':''} ${n===0?'cue-ball':''}" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><defs><clipPath id="ball-clip-${n}"><circle cx="16" cy="16" r="15"/></clipPath></defs><circle cx="16" cy="16" r="15" fill="${n>8?'#f4f0df':colors[n]}"/>${stripe}<circle cx="16" cy="16" r="15" fill="none" stroke="#13241d" stroke-opacity=".22"/><ellipse cx="11" cy="8" rx="6" ry="3.5" fill="#fff" opacity=".28"/>${face}</svg>`;
+ return `<svg class="pool-ball-svg ${n>8?'striped':''} ${n===0?'cue-ball':''}" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="15" fill="${n>8?'#f4f0df':colors[n]}"/>${stripe}<circle cx="16" cy="16" r="15" fill="none" stroke="#13241d" stroke-opacity=".22"/><ellipse cx="11" cy="8" rx="6" ry="3.5" fill="#fff" opacity=".28"/>${face}</svg>`;
 }
 function dotSvg(){return '<svg class="record-dot" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8.5" fill="#fff"/><circle cx="10" cy="10" r="8" fill="none" stroke="#fff" stroke-opacity=".35"/></svg>';}
 function markSvg(kind,plural=false){

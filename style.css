@@ -160,3 +160,9 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 .turn-mark .mark-zero{left:50%;right:auto;top:84%;width:min(20px,30cqw);height:min(20px,45cqh);transform:translate(-50%,-50%)}
 .score-record.mark-only .turn-mark .mark-zero{top:50%}
 @media(max-width:540px){.selected-balls .pool-ball-svg{width:28px;height:28px}}
+
+/* A zero handover has no score disc: anchor marks to the dash's visible ends. */
+.score-record.mark-only{--handover-half:min(4.8px,7.8cqw)}
+.score-record.mark-only .turn-mark .mark-zero{width:min(16px,26cqw);height:min(16px,26cqw);max-width:none;top:50%}
+.score-record.mark-only .turn-mark .mark-foul{right:calc(50% + var(--handover-half) + 1px)}
+.score-record.mark-only .turn-mark .mark-safety{left:calc(50% + var(--handover-half) + 1px)}

@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {createGame,addTurn,finishGame,pauseClock,playerStats,selectOpeningPlayer,stateOf,rackState,undo,resumeClock} from './engine.js';
-import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js';
+import {ball,matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js';
 import {filterHistory,matchHistoryPage,localDate} from './history.js';
 test('board has 16 aligned ball rows and two independent scrollable history regions',()=>{
  const g=createGame(['甲','乙']);const html=scoreboardPage(g);
@@ -367,4 +367,10 @@ test('zero handover dash is omitted beside an owned scoring dot but retained wit
  const html=scoreboardPage(g),owned=html.match(/data-record-player="0" data-record-score="3"[^]*?(?=<span class="score-record|<button class="ball-center)/)[0],other=html.match(/data-record-player="1" data-record-score="3"[^]*?(?=<button class="ball-center)/)[0];
  assert.match(owned,/class="record-dot"/);assert.doesNotMatch(owned,/class="mark-icon mark-zero"/);assert.match(owned,/class="mark-icon mark-safety"/);
  assert.match(other,/class="mark-icon mark-zero"/);assert.doesNotMatch(other,/class="record-dot"/);
+});
+
+test('striped balls use a circle-bounded band and zero handovers use an SVG path',()=>{
+ for(let n=9;n<=15;n++){const svg=ball(n);assert.doesNotMatch(svg,/M1 8h30v16H1z/);assert.match(svg,/A15 15 0 0 1/);}
+ let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss'});g=addTurn(g,{balls:0,outcome:'safety'});
+ assert.match(scoreboardPage(g),/<svg class="mark-icon mark-zero"[^]*?<path d="M4 10h12"/);
 });
