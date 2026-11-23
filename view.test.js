@@ -143,14 +143,13 @@ test('rack ownership remains scattered and safety marks last scored ball only',(
  assert.equal((html.match(/class="turn-mark"/g)||[]).length,1);
  assert.equal((html.match(/data-pick=/g)||[]).length,0);
 });
-test('zero scoring safety and foul mark the cue-ball position without score dots',()=>{
+test('zero scoring safety and foul before the first object ball leave no marks or score dots',()=>{
  let g=addTurn(createGame(['甲','乙']),{balls:0,outcome:'safety'});
  g=addTurn(g,{balls:0,outcome:'foul'});
  const html=scoreboardPage(g);
  assert.equal((html.match(/class="record-dot"/g)||[]).length,0);
- assert.equal((html.match(/class="turn-mark"/g)||[]).length,2);
- assert.match(html,/data-record-player="0" data-record-score="0"[^]*?aria-label="安全球">△/);
- assert.match(html,/data-record-player="1" data-record-score="0"[^]*?aria-label="犯規">×/);
+ assert.equal((html.match(/class="turn-mark"/g)||[]).length,0);
+ assert.doesNotMatch(html,/data-record-score="0"/);
 });
 test('interrupted games preserve scores and timing without a winner or win-rate impact',()=>{
  let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss',rackEnd:3});
@@ -295,4 +294,18 @@ test('zero-point handover annotates the current ball on the shooters side withou
 test('ball layout allocates height only to visible scoring rows and preserves completed rack records',()=>{
  let g=createGame(['甲','乙'],10),html=scoreboardPage(g);assert.match(html,/--ball-row-count:11/);assert.equal((html.match(/class="ball-row [^"]*" hidden/g)||[]).length,5);
  g=addTurn(createGame(['甲','乙'],100),{balls:14,outcome:'continue',rackEnd:14});html=scoreboardPage(g);assert.match(html,/--ball-row-count:16/);assert.equal((html.match(/class="record-dot"/g)||[]).length,14);
+});
+
+test('zero-point safety and foul at ball five mark the departing shooter, never the cue ball',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'miss',rackEnd:5});
+ g=addTurn(g,{balls:0,outcome:'foul'});
+ let html=scoreboardPage(g);assert.match(html,/class="score-record mark-only"[^>]*data-record-player="1" data-record-score="5"[^]*?aria-label="犯規">×/);
+ assert.equal((html.match(/class="record-dot"/g)||[]).length,5);assert.doesNotMatch(html,/data-record-score="0"/);
+ g=addTurn(g,{balls:0,outcome:'safety'});html=scoreboardPage(g);
+ assert.match(html,/data-record-player="0" data-record-score="5"[^]*?aria-label="安全球">△/);
+ assert.equal((html.match(/class="record-dot"/g)||[]).length,5);
+});
+test('zero scoring after a rerack does not carry a handover mark to zero',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:14,outcome:'continue',rackEnd:14});g=addTurn(g,{balls:0,outcome:'safety'});
+ const html=scoreboardPage(g);assert.doesNotMatch(html,/class="turn-mark"|data-record-score="0"/);
 });
