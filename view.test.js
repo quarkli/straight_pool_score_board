@@ -11,7 +11,7 @@ test('board has 16 aligned ball rows and two independent scrollable history regi
 });
 test('swap changes display order, never player identity, turn or score',()=>{
  const g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'miss',shots:6});const original=JSON.stringify(g);
- const html=scoreboardPage(g,{swapped:true});assert.ok(html.indexOf('<h1>乙</h1>')<html.indexOf('<h1>甲</h1>'));
+ const html=scoreboardPage(g,{swapped:true});assert.ok(html.indexOf('>乙</button></h1>')<html.indexOf('>甲</button></h1>'));
  assert.equal(JSON.stringify(g),original);assert.doesNotMatch(html,/visit-summary/);assert.match(html,/>5<\/span>/);
 });
 test('picking five highlights exactly five options on the selected side',()=>{
@@ -203,14 +203,14 @@ test('completed scoreboard reuses finish button and disables score changes',()=>
  const g=finishGame(createGame(['甲','乙']),0),html=scoreboardPage(g);
  assert.match(html,/比賽結束 · 甲 獲勝 · 唯讀/);
  assert.match(html,/data-action="undo" disabled/);
- assert.match(html,/data-action="finish">結束比賽/);
+ assert.match(html,/data-action="finish"[^>]*>結束比賽/);
  assert.doesNotMatch(html,/>再來一場<|>結束<\/button>/);
 });
 test('scoreboard opens current-match statistics and uses only this game for both players',()=>{
  let g=addTurn(createGame(['本場甲','本場乙']),{balls:3,outcome:'miss',shots:4});
  g=addTurn(g,{balls:2,outcome:'safety',shots:3});
  const html=matchStats(g);assert.match(html,/本場甲/);assert.match(html,/本場乙/);assert.match(html,/淨得分<\/th><td>3<\/td><td>2<\/td>/);assert.match(html,/出場數<\/th><td>1<\/td><td>1<\/td>/);assert.match(html,/安全球<\/th><td>0<\/td><td>1<\/td>/);
- assert.match(scoreboardPage(g),/data-action="match-stats">統計分析/);
+ assert.match(scoreboardPage(g),/data-action="match-stats"[^>]*>統計分析/);
  assert.doesNotMatch(scoreboardPage(g),/href="#stats">統計分析/);
  assert.match(matchStats(finishGame(g,0)),/比賽結束 · 唯讀紀錄/);
 });
@@ -259,8 +259,8 @@ test('match and history show defensive and rack-opening success rates with count
 test('breaker label appears only after first confirmed score and follows identity when swapped',()=>{
  const initial=createGame(['甲','乙']);assert.doesNotMatch(scoreboardPage(initial),/breaker-label/);
  let g=addTurn(selectOpeningPlayer(initial,1),{balls:0,outcome:'safety'});
- for(const swapped of [false,true]){const html=scoreboardPage(g,{swapped});assert.equal((html.match(/class="breaker-label"/g)||[]).length,1);assert.match(html,/<h1>乙<\/h1><span class="breaker-label">（先攻）<\/span>/);}
- g=addTurn(g,{balls:3,outcome:'miss'});assert.match(scoreboardPage(g),/<h1>乙<\/h1><span class="breaker-label">（先攻）/);
+ for(const swapped of [false,true]){const html=scoreboardPage(g,{swapped});assert.equal((html.match(/class="breaker-label"/g)||[]).length,1);assert.match(html,/>乙<\/button><\/h1><span class="breaker-label">（先攻）<\/span>/);}
+ g=addTurn(g,{balls:3,outcome:'miss'});assert.match(scoreboardPage(g),/>乙<\/button><\/h1><span class="breaker-label">（先攻）/);
 });
 
 test('scoring header underlines the active display side and follows swap and handover',()=>{
@@ -270,4 +270,11 @@ test('scoring header underlines the active display side and follows swap and han
  assert.match(scoreboardPage(g,{swapped:true}),/class="active-scoring-side" aria-current="true">左側記分/);
  g=addTurn(g,{balls:0,outcome:'safety'});assert.match(scoreboardPage(g),/class="active-scoring-side" aria-current="true">左側記分/);
  assert.doesNotMatch(scoreboardPage(finishGame(g,0)),/class="active-scoring-side"/);
+});
+
+test('ready board replaces setup with editable names and start button while all play controls are disabled',()=>{
+ const g={...pauseClock(createGame(['A','B'])),status:'ready'},html=scoreboardPage(g);
+ assert.match(html,/data-action="start"/);assert.doesNotMatch(html,/setup-form/);assert.equal((html.match(/data-edit-player=/g)||[]).length,2);
+ assert.equal((html.match(/data-pick="\d+"[^>]*disabled/g)||[]).length,32);
+ assert.match(html,/data-action="clock" disabled/);assert.match(html,/data-handicap-player="0"[^>]*disabled/);
 });

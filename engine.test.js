@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,clockTotals,pauseClock,resumeClock,visitRecords} from './engine.js';
+import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,clockTotals,pauseClock,resumeClock,visitRecords} from './engine.js';
 const start=(t=100)=>createGame(['甲','乙'],t);const turn=(g,balls,outcome='miss',options={})=>addTurn(g,{balls,outcome,...options});
 test('legal scoring, negative score and alternating visits',()=>{let g=turn(start(),8);g=turn(g,0,'scratch');const s=stateOf(g);assert.deepEqual(s.scores,[8,-1]);assert.deepEqual(s.visits,[1,1]);assert.equal(s.active,0);});
 test('a run spans continuation entries and racks without extra inning',()=>{let g=turn(start(),14,'continue');g=turn(g,14,'continue');g=turn(g,3);const s=stateOf(g);assert.equal(s.high[0],31);assert.equal(s.visits[0],1);assert.equal(s.scores[0],31);});
@@ -157,4 +157,22 @@ test('opening aggregates are weighted by evaluated racks and do not mutate saved
  let a=turn(start(),14,'continue');a=turn(a,0,'miss');a=finishGame(a,0);
  let b=turn(start(),2,'miss');b=finishGame(b,0);
  const original=JSON.stringify([a,b]),p=playerStats([a,b]).find(p=>p.name==='甲');assert.equal(p.openings,3);assert.equal(p.openingEvaluated,3);assert.equal(p.openingSuccess,2);assert.equal(JSON.stringify([a,b]),original);
+});
+
+test('handicap replaces prior credit without changing legal balls, runs, fouls or shooter',()=>{
+ let g=turn(start(),3);const before=stateOf(g);g=setHandicap(g,0,10);let s=stateOf(g);
+ assert.deepEqual(s.scores,[13,0]);assert.deepEqual(s.balls,before.balls);assert.deepEqual(s.high,before.high);assert.equal(s.active,before.active);assert.equal(s.rows.length,1);
+ g=setHandicap(g,0,5);assert.deepEqual(stateOf(g).scores,[8,0]);
+ g=setHandicap(g,1,-2);assert.deepEqual(stateOf(g).scores,[8,-2]);
+ const restored=validateHistory({schemaVersion:1,games:JSON.parse(JSON.stringify([g]))})[0];assert.deepEqual(stateOf(restored).scores,[8,-2]);
+ g=undo(g);assert.deepEqual(stateOf(g).scores,[8,0]);
+});
+test('handicap can finish a match and completed records remain immutable',()=>{
+ let g=setHandicap(start(10),1,10);assert.equal(g.status,'finished');assert.equal(g.winner,1);assert.equal(g.clock.runningSince,null);
+ assert.equal(validateHistory({schemaVersion:1,games:[g]})[0].winner,1);assert.throws(()=>setHandicap(g,0,2));assert.throws(()=>renamePlayer(g,0,'新名字'));
+});
+test('names can be edited on ready and active boards with normal validation',()=>{
+ let g={...start(),status:'ready'};g=renamePlayer(g,0,' A ');assert.equal(g.players[0],'A');assert.equal(g.status,'ready');
+ assert.throws(()=>renamePlayer(g,1,'a'));assert.throws(()=>renamePlayer(g,1,''));assert.throws(()=>addTurn(g,{balls:1,outcome:'miss'}));
+ g={...g,status:'active'};g=turn(g,3);g=renamePlayer(g,1,'B');assert.deepEqual(stateOf(g).scores,[3,0]);assert.equal(g.players[1],'B');
 });

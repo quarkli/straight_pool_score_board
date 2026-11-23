@@ -87,3 +87,9 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 @media(max-width:540px){.breaker-label{font-size:10px}}
 
 .picker-header .active-scoring-side{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;color:#fff;font-weight:700}
+
+.player-name-button,.score-handicap-button{font-family:inherit;color:inherit;background:none;border:0;padding:0;text-align:inherit}
+.player-name-button{font:inherit;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text}
+.score-handicap-button{font-weight:750;cursor:pointer}
+.player-name-button:disabled,.score-handicap-button:disabled{cursor:default;opacity:1}
+.player-name-button:not(:disabled):hover,.score-handicap-button:not(:disabled):hover{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px}

@@ -16,9 +16,10 @@ export function selectOpeningPlayer(game,player){
 }
 export function stateOf(game){
  let target=game.events.find(e=>e.type==='target')?.previousTarget??game.target;
- const s={scores:[0,0],fouls:[0,0],active:game.breaker,opening:true,visits:[0,0],runs:[0,0],high:[0,0],balls:[0,0],penalties:[0,0],standard:[0,0],breaking:[0,0],three:[0,0],winner:null,rows:[],visitOpen:false,warned:[false,false]};
+ const s={scores:[0,0],handicaps:[0,0],fouls:[0,0],active:game.breaker,opening:true,visits:[0,0],runs:[0,0],high:[0,0],balls:[0,0],penalties:[0,0],standard:[0,0],breaking:[0,0],three:[0,0],winner:null,rows:[],visitOpen:false,warned:[false,false]};
  for(const e of game.events){
   if(e.type==='target'){target=e.target;if(Math.max(...s.scores)>=target)s.winner=s.scores[0]>s.scores[1]?0:1;continue;}
+  if(e.type==='handicap'){s.scores[e.player]+=e.points-s.handicaps[e.player];s.handicaps[e.player]=e.points;if(Math.max(...s.scores)>=target)s.winner=s.scores[0]>s.scores[1]?0:1;continue;}
   if(e.type==='finish'){s.winner=e.winner;continue;}
   if(e.type==='stalemate'){s.active=e.breaker;s.opening=true;s.runs=[0,0];s.fouls=[0,0];s.warned=[false,false];s.visitOpen=false;continue;}
   const p=s.active;
@@ -81,6 +82,22 @@ export function changeTarget(game,target,now=Date.now()){
  if(Math.max(...scores)>=target){g.status='finished';g.finalized=true;g.winner=scores[0]>scores[1]?0:1;g.reason='target';g.endedAt=new Date(now).toISOString();if(g.clock)g.clock.runningSince=null;}
  return g;
 }
+export function setHandicap(game,player,points,now=Date.now()){
+ if(game.status!=='active'||game.finalized)throw Error('比賽未開始或已結束，不能設定讓分。');
+ if(![0,1].includes(player)||!Number.isInteger(points)||points< -10000||points>10000)throw Error('讓分須為 -10,000 至 10,000 的整數。');
+ const s=stateOf(game),scores=[...s.scores];scores[player]+=points-s.handicaps[player];
+ if(scores[0]===scores[1]&&scores[0]>=game.target)throw Error('讓分後雙方同分且達標，請調整讓分或目標。');
+ if(points===s.handicaps[player])return structuredClone(game);
+ const g=settleClock(game,now);g.events.push({type:'handicap',player,points,at:new Date(now).toISOString()});
+ if(Math.max(...scores)>=g.target){g.status='finished';g.finalized=true;g.winner=scores[0]>scores[1]?0:1;g.reason='target';g.endedAt=new Date(now).toISOString();if(g.clock)g.clock.runningSince=null;}
+ return g;
+}
+export function renamePlayer(game,player,name){
+ if(game.status==='finished'||game.finalized)throw Error('比賽已結束，不能修改姓名。');
+ if(![0,1].includes(player))throw Error('請選擇選手。');
+ const names=[...game.players];names[player]=String(name).trim();createGame(names,game.target,game.breaker);
+ return {...structuredClone(game),players:names};
+}
 export function undo(game){if(game.status==='finished'||game.finalized)throw Error('Finished games are read-only.');const g=structuredClone(game);const removed=g.events.pop();if(removed?.type==='target')g.target=removed.previousTarget;delete g.rackClearedAt;g.status='active';g.winner=null;delete g.endedAt;delete g.reason;if(g.clock){g.clock=settleClock(game).clock;g.clock.runningSince=null;}return g;}
 export function validateHistory(data){
  if(!data||data.schemaVersion!==VERSION||!Array.isArray(data.games)||data.games.length>10000)throw Error('Unsupported JSON. Use a Straight Pool export (schemaVersion 1).');
@@ -92,8 +109,9 @@ export function validateHistory(data){
   if(g.events.some(e=>(e.elapsedMs!=null&&(!Number.isFinite(e.elapsedMs)||e.elapsedMs<0))||(e.shots!=null&&(!Number.isInteger(e.shots)||e.shots<1||e.shots>100000))))throw Error('Invalid timing or shot count.');
   ids.add(g.id);let replay={...g,target:g.events.find(e=>e.type==='target')?.previousTarget??g.target,clock:undefined,finalized:false,status:'active',winner:null,events:[]};
   for(const e of g.events){
-   if(!e||!['turn','finish','stalemate','target'].includes(e.type))throw Error('Invalid game event.');
+   if(!e||!['turn','finish','stalemate','target','handicap'].includes(e.type))throw Error('Invalid game event.');
    if(e.type==='turn')replay=addTurn(replay,e);
+   else if(e.type==='handicap')replay=setHandicap(replay,e.player,e.points);
    else if(e.type==='target'){if(e.previousTarget!==replay.target)throw Error('Invalid target history.');replay=changeTarget(replay,e.target);}
    else if(e.type==='finish')replay=finishGame(replay,e.winner,e.reason);
    else{if(replay.status!=='active'||![0,1].includes(e.breaker))throw Error('Invalid stalemate.');replay.events.push(e);}

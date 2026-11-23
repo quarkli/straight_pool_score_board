@@ -1,14 +1,15 @@
-import {installApp,updateInstallButtons} from './pwa.js?v=20261123.29';
-import {bindDeletion} from './deletion.js?v=20261123.29';
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261123.29';
-import {changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261123.29';
-import {rulesPage,tableDiagram} from './rules.js?v=20261123.29';
-import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261123.29';
-import {matchHistoryPage} from './history.js?v=20261123.29';
+import {installApp,updateInstallButtons} from './pwa.js?v=20261123.30';
+import {bindDeletion} from './deletion.js?v=20261123.30';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261123.30';
+import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261123.30';
+import {rulesPage,tableDiagram} from './rules.js?v=20261123.30';
+import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261123.30';
+import {matchHistoryPage} from './history.js?v=20261123.30';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1',TARGET_PREF='straight-pool-target-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
 const names={miss:'失誤換手',safety:'安全球',foul:'一般犯規',scratch:'母球洗袋／飛出台','break-foul':'開球失誤',continue:'繼續此局',win:'達標獲勝'};
+let draft=null;
 let storageError='',swapped=false,selection=null,summaryTimeout=null,rackSummaryPending=null;
 try{swapped=localStorage.getItem('straight-pool-swap')==='true';}catch{}
 try{const raw=localStorage.getItem(KEY);if(raw)games=validateHistory(JSON.parse(raw));current=games.find(g=>g.status==='active')?.id||null;}catch(e){storageError='無法載入儲存資料，請先匯出備份再繼續。原始資料未覆蓋。';}
@@ -22,9 +23,13 @@ function head(kicker,title,desc,actions=''){return `<div class="page-head"><div>
 function btn(action,text,kind=''){return `<button class="btn ${kind}" data-action="${action}">${text}</button>`;}
 function preferredTarget(){try{const raw=localStorage.getItem(TARGET_PREF);const value=Number(raw??games.at(-1)?.target??100);if(Number.isInteger(value)&&value>=1&&value<=10000)return value;}catch{}return 100;}
 function rememberTarget(value){if(!Number.isInteger(value)||value<1||value>10000)return;try{localStorage.setItem(TARGET_PREF,String(value));}catch{notify('無法記住目標分數，請檢查瀏覽器儲存空間。');}}
-function setup(){let pref=['',''];try{pref=JSON.parse(localStorage.getItem(PREF)||'["",""]');}catch{}return head('YOUR NEXT RUN','每一桿，都算數。','14.1 連續撞球，從這裡開始。',btn('install','本地安裝')+btn('export','匯出 JSON'))+`<section class="card setup"><div class="intro-table">${tableDiagram({full:true,object:null,cue:[110,140]})}</div><h2>開始一場比賽</h2><p class="sub">設定雙方球員與目標分數，姓名與目標分數會自動記住。</p><form id="setup-form" class="section"><div class="form-grid"><label>球員一<input name="p0" maxlength="40" required autocomplete="off" placeholder="輸入姓名" value="${esc(pref[0])}"></label><label>球員二<input name="p1" maxlength="40" required autocomplete="off" placeholder="輸入姓名" value="${esc(pref[1])}"></label><label>目標分數<input name="target" type="number" min="1" max="10000" step="1" value="${preferredTarget()}" required></label><div class="opening-note"><strong>開球選手</strong><p>進入記分板後，左右都能開始記分。先記分者自動成為開球選手。</p></div></div><div id="form-error" class="error" role="alert"></div><button class="btn primary big-action" ${storageError?'disabled':''}>開始比賽</button></form><p class="note">自動保存進度，可隨時離開再回來。每局結束後建議下載 JSON 備份。</p></section>`;}
+function readyGame(){
+ if(!draft){let names=['A','B'];try{const saved=JSON.parse(localStorage.getItem(PREF));if(Array.isArray(saved)&&saved.length===2)names=saved;}catch{}
+  try{draft=pauseClock(createGame(names,preferredTarget()));}catch{draft=pauseClock(createGame(['A','B'],preferredTarget()));}draft.status='ready';
+ }return draft;
+}
 function ledger(g){const s=stateOf(g);return `<div class="scroll-table"><table><thead><tr><th>局次</th><th>球員</th><th>進球</th><th>結果</th><th>扣分</th><th>淨得分</th><th>累計</th></tr></thead><tbody>${s.rows.length?s.rows.map(r=>`<tr><td>${r.visit}</td><td class="name">${esc(g.players[r.player])}</td><td>${r.balls}</td><td>${names[r.outcome]}${r.third?' · 三犯追加':''}${r.rebreak?' · 重開':''}${r.note?`<div class="note">${esc(r.note)}</div>`:''}</td><td class="negative">${r.penalty?`−${r.penalty}`:'—'}</td><td class="${r.net<0?'negative':'positive'}">${r.net>0?'+':''}${r.net}</td><td><strong>${r.total}</strong></td></tr>`).join(''):'<tr><td colspan="7" class="empty">第一桿，準備好了嗎？</td></tr>'}</tbody></table></div>`;}
-function scorePage(){const g=currentGame();return g?scoreboardPage(g,{swapped,selection}):setup();}
+function scorePage(){const g=currentGame();return scoreboardPage(g||readyGame(),{swapped,selection});}
 function chart(g){const s=stateOf(g);if(!s.rows.length)return '<div class="empty">尚無計分資料</div>';const series=[[0],[0]],scores=[0,0];s.rows.forEach(r=>{scores[r.player]=r.total;series.forEach((a,i)=>a.push(scores[i]));});const lo=Math.min(0,...series.flat()),hi=Math.max(1,...series.flat()),x=i=>48+i*650/Math.max(1,s.rows.length),y=v=>235-(v-lo)*195/(hi-lo);return `<div class="chart-legend">${g.players.map((n,i)=>`<span style="color:${i?'#a87732':'#21634a'}">● ${esc(n)}</span>`).join('')}</div><div class="chart-wrap"><svg class="chart" viewBox="0 0 740 280" role="img" aria-label="本場雙方累積分數走勢，依記錄先後排列">${[0,1,2,3,4].map(i=>{const v=lo+(hi-lo)*i/4;return `<line x1="48" x2="700" y1="${y(v)}" y2="${y(v)}" stroke="#e2e8e1"/><text x="38" y="${y(v)+4}" text-anchor="end" font-size="12" fill="#71847b">${Math.round(v)}</text>`;}).join('')}${series.map((a,i)=>`<polyline points="${a.map((v,j)=>`${x(j)},${y(v)}`).join(' ')}" stroke="${i?'#b78a47':'#21634a'}" fill="none" stroke-width="3"/>`).join('')}<text x="370" y="270" text-anchor="middle" fill="#71847b" font-size="12">記錄順序（含局內分段記錄）</text></svg></div>`;}
 const rate=(n,d)=>d?`${(n/d*100).toFixed(1)}%`:'—';
 function tacticsTable(players){
@@ -36,7 +41,7 @@ function tacticsSection(players,title='失誤與防守分析'){
 function statsPage(){let finished=games.filter(g=>g.status==='finished'&&g.reason!=='interrupted');const allNames=[...new Set(finished.flatMap(g=>g.players))].sort();let chosen=finished.filter(g=>(!filterPlayer||g.players.includes(filterPlayer))&&(!filterOpponent||g.players.includes(filterOpponent))&&(!filterPlayer||!filterOpponent||filterPlayer!==filterOpponent));let stats=playerStats(chosen);if(filterPlayer)stats=stats.filter(a=>a.name.toLowerCase()===filterPlayer.toLowerCase());const turns=chosen.reduce((n,g)=>n+stateOf(g).visits.reduce((a,b)=>a+b,0),0),balls=chosen.reduce((n,g)=>n+stateOf(g).balls.reduce((a,b)=>a+b,0),0),high=Math.max(0,...chosen.flatMap(g=>stateOf(g).high));return head('KNOW YOUR GAME','從紀錄，看見進步。','依已完成比賽分析球員表現。',btn('install','本地安裝')+btn('export','匯出 JSON'))+`<div class="filter-row"><label>球員<select id="filter-player"><option value="">全部球員</option>${allNames.map(n=>`<option ${n===filterPlayer?'selected':''}>${esc(n)}</option>`).join('')}</select></label><label>對戰對象<select id="filter-opponent"><option value="">所有對手</option>${allNames.map(n=>`<option ${n===filterOpponent?'selected':''}>${esc(n)}</option>`).join('')}</select></label></div><div class="metric-grid">${[['完成比賽',chosen.length],['合法進球',balls],['最高連續得分',high],['平均每次出場進球',turns?(balls/turns).toFixed(2):'—']].map(([t,v])=>`<div class="metric"><span>${t}</span><strong>${v}</strong></div>`).join('')}</div><section class="card"><h2>球員表現</h2>${stats.length?`<div class="scroll-table"><table><thead><tr><th>球員</th><th>場次</th><th>勝場</th><th>勝率</th><th>淨得分</th><th>最高連續</th><th>每次出場進球</th><th>犯規／出場</th><th>扣分</th><th>平均出手得分</th><th>失誤率</th></tr></thead><tbody>${stats.map(p=>`<tr><td class="name">${esc(p.name)}</td><td>${p.games}</td><td>${p.wins}</td><td>${(p.wins/p.games*100).toFixed(0)}%</td><td>${p.points}</td><td>${p.high}</td><td>${p.visits?(p.balls/p.visits).toFixed(2):'—'}</td><td>${p.visits?(p.fouls/p.visits).toFixed(2):'—'}</td><td>${p.penalties}</td><td>${p.recordedShots?(p.shotPoints/p.recordedShots).toFixed(2):'未記錄'}</td><td>${p.recordedShots?rate(p.shotMisses,p.recordedShots):'未記錄'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">還沒有完成的比賽。打一場，數據就會出現在這裡。</div>'}<p class="note">每次出場進球＝合法進球 ÷ 上場次數（含零分局）；最高連續得分會合併同一次出場的分段記錄。球員名稱以忽略大小寫方式彙總。出手次數預設為估算值，一桿多球時可修正；每桿統計供參考。出手平均得分＝有出手次數之記錄的淨得分 ÷ 出手數；失誤率＝其中的失誤不進次數 ÷ 出手數，安全球與犯規另計。舊版缺少出手數的記錄不列入出手指標。</p></section>${tacticsSection(stats)}${timeStatsSection(stats)}${chosen.length?`<section class="card section"><h2>比賽分數走勢</h2><label>選擇比賽<select id="chart-game">${chosen.slice().reverse().map(g=>`<option value="${esc(g.id)}">${esc(g.players.join(' vs '))} · ${new Date(g.startedAt).toLocaleDateString('zh-TW')}</option>`).join('')}</select></label><div id="chart-area" class="section">${chart(chosen.at(-1))}</div></section><section class="card section"><h2>每場進步紀錄</h2><div class="scroll-table"><table><thead><tr><th>日期</th><th>對戰</th><th>比分</th><th>勝者</th><th>最高連續</th></tr></thead><tbody>${chosen.slice().reverse().map(g=>{const s=stateOf(g);return `<tr><td>${new Date(g.startedAt).toLocaleDateString('zh-TW')}</td><td class="name">${esc(g.players.join(' ／ '))}</td><td>${s.scores.join(' : ')}</td><td>${esc(g.players[g.winner])}</td><td>${s.high.join(' ／ ')}</td></tr>`;}).join('')}</tbody></table></div></section>`:''}`;}
 function timeStatsSection(players){return `<section class="card section"><h2>用時分析</h2>${players.length?`<div class="scroll-table"><table><thead><tr><th>球員</th><th>完整計時場次</th><th>累計比賽用時</th><th>平均每場用時</th><th>平均每次出場用時</th><th>有計時出場數</th><th>平均每次出手</th><th>有計時出手數</th></tr></thead><tbody>${players.map(p=>`<tr><td class="name">${esc(p.name)}</td><td>${p.timedGames}</td><td>${p.timedGames?duration(p.timeMs):'未記錄'}</td><td>${p.timedGames?duration(p.timeMs/p.timedGames):'未記錄'}</td><td>${p.timedVisits?duration(p.visitTimeMs/p.timedVisits):'未記錄'}</td><td>${p.timedVisits}</td><td>${p.timedShots?duration(p.shotTimeMs/p.timedShots):'未記錄'}</td><td>${p.timedShots}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">完成有計時的比賽後，會顯示雙方的用時分析。</div>'}<p class="note">休息不計時。累計與每場平均只採完整計時場次；每次出場平均只採已結束且用時完整的出場。每次出手平均＝有計時記錄的用時 ÷ 記錄的出手次數；出手數可在記分視窗修正。舊版或中途啟用計時的資料不會當成零用時。未按休息而離開網頁，計時仍持續。</p></section>`;}
 function historyPage(){return matchHistoryPage(games,historyFilters);}
-function render(){const route=location.hash.slice(1)||'score';document.body.classList.toggle('score-screen',route==='score'&&!!currentGame());document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.hash===`#${route}`);if(a.hash===`#${route}`)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});$('#app').innerHTML=(storageError?`<div class="alert">${storageError}</div>`:'')+({rules:()=>rulesPage(scenario),stats:statsPage,history:historyPage,practice:practicePage,score:scorePage}[route]||scorePage)();bind();updateInstallButtons();updateClocks();}
+function render(){const route=location.hash.slice(1)||'score';document.body.classList.toggle('score-screen',route==='score');document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.hash===`#${route}`);if(a.hash===`#${route}`)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});$('#app').innerHTML=(storageError?`<div class="alert">${storageError}</div>`:'')+({rules:()=>rulesPage(scenario),stats:statsPage,history:historyPage,practice:practicePage,score:scorePage}[route]||scorePage)();bind();updateInstallButtons();updateClocks();}
 function extra(){const select=$('#outcome');if(!select)return;const g=currentGame(),s=stateOf(g),o=select.value;$('#extra-options').innerHTML=o==='break-foul'?'<label class="checkline"><input type="checkbox" name="rebreak">對手要求原球員重新開球（不勾選則對手接收球位）</label>':(o==='foul'||o==='scratch')&&s.fouls[s.active]>=2?'<label class="checkline"><input type="checkbox" name="warned">這一桿前，已明確告知球員處於兩犯（勾選才追加扣 15 分）</label>':'';}
 function modal(html,title='比賽設定'){delete $('#modal').dataset.playerTone;$('#modal').innerHTML=`<div class="dialog-head"><h2>${title}</h2><button class="btn" data-close>關閉</button></div>${html}`;$('#modal').showModal();$('[data-close]').onclick=()=>$('#modal').close();}
 function bind(){
@@ -51,8 +56,17 @@ function bind(){
  bindPractice(render,notify);
  for(const [field,key] of [['history-from','from'],['history-to','to'],['history-player','player'],['history-opponent','opponent']]){document.getElementById(field)?.addEventListener('change',e=>{historyFilters[key]=e.target.value;render();});}
 
- $('#setup-form [name=target]')?.addEventListener('change',e=>rememberTarget(Number(e.target.value)));
- $('#setup-form')?.addEventListener('submit',e=>{e.preventDefault();try{const f=new FormData(e.target),g=createGame([f.get('p0'),f.get('p1')],Number(f.get('target')),0);localStorage.setItem(PREF,JSON.stringify(g.players));rememberTarget(g.target);put(g);}catch(e){$('#form-error').textContent=translateError(e.message);}});
+ document.querySelectorAll('[data-edit-player]').forEach(b=>b.onclick=()=>{
+  const g=currentGame()||readyGame(),p=Number(b.dataset.editPlayer);if(g.status==='finished')return;
+  modal(`<form id="name-form"><label>選手姓名<input id="player-name" maxlength="40" required value="${esc(g.players[p])}"></label><p class="error" id="name-error"></p><button class="btn primary">確認姓名</button></form>`,'編輯姓名');
+  $('#name-form').onsubmit=e=>{e.preventDefault();try{const next=renamePlayer(g,p,$('#player-name').value);localStorage.setItem(PREF,JSON.stringify(next.players));$('#modal').close();if(g.status==='ready'){draft=next;render();}else put(next);}catch(e){$('#name-error').textContent=translateError(e.message);}};
+  $('#player-name').focus();$('#player-name').select();
+ });
+ document.querySelectorAll('[data-handicap-player]').forEach(b=>b.onclick=()=>{
+  const g=currentGame();if(g?.status!=='active')return;const p=Number(b.dataset.handicapPlayer),s=stateOf(g);
+  modal(`<form id="handicap-form"><label>${esc(g.players[p])} 的讓分（起始加分）<input id="handicap-points" type="number" min="-10000" max="10000" step="1" required value="${s.handicaps[p]}"></label><p class="note">正數加分、負數扣分；這是本場讓分總額，重新設定會取代原讓分，不重複累加。實際進球、犯規與連進統計保持獨立。調整後達標會結束比賽。</p><p class="error" id="handicap-error"></p><button class="btn primary">確認讓分</button></form>`,'讓分設定');
+  $('#handicap-form').onsubmit=e=>{e.preventDefault();try{const next=setHandicap(currentGame(),p,Number($('#handicap-points').value));$('#modal').close();put(next);if(next.status==='finished')endGameDialog(next);}catch(e){$('#handicap-error').textContent=e.message;}};
+ });
  $('#turn-form')?.addEventListener('submit',e=>{e.preventDefault();try{const f=new FormData(e.target),g=addTurn(currentGame(),{balls:Number(f.get('balls')),outcome:f.get('outcome'),warned:f.has('warned'),rebreak:f.has('rebreak'),note:f.get('note')});put(g);notify(g.status==='finished'?`${g.players[g.winner]} 獲勝，紀錄已保存。`:'已保存記錄。');}catch(e){$('#form-error').textContent=translateError(e.message);}});
  document.querySelectorAll('[data-delta]').forEach(b=>b.onclick=()=>{$('#balls').value=Math.max(0,Math.min(10000,Number($('#balls').value||0)+Number(b.dataset.delta)));});
  $('#outcome')?.addEventListener('change',extra);extra();
@@ -68,6 +82,11 @@ async function action(a){
  if(a==='load-demo'){await loadDemo();return;}
  if(a==='history-reset'){historyFilters={from:'',to:'',player:'',opponent:''};render();return;}
  if(a==='match-stats'){const g=currentGame();if(g)modal(matchStats(g),'本場雙方統計');return;}
+ if(a==='start'){
+  if(currentGame()||storageError)return;const g=readyGame();
+  modal(`<form id="start-form"><label>目標分數<input id="start-target" type="number" min="1" max="10000" step="1" required value="${preferredTarget()}"></label><p class="note">確認後開始計時與記分，目標分數會自動沿用至下一場。</p><p class="error" id="start-error"></p><button class="btn primary">開始比賽</button></form>`,'開始比賽');
+  $('#start-form').onsubmit=e=>{e.preventDefault();try{const next=createGame(g.players,Number($('#start-target').value));rememberTarget(next.target);localStorage.setItem(PREF,JSON.stringify(next.players));$('#modal').close();draft=null;put(next);}catch(e){$('#start-error').textContent=translateError(e.message);}};return;
+ }
  if(a==='target'){
   const g=currentGame();if(!g||g.status!=='active')return;
   modal(`<label>目標分數<input id="target-edit" type="number" min="1" max="10000" step="1" value="${g.target}"></label><p class="note">可縮短或延長比賽。調低後如有選手已達標，將以目前領先者結束比賽；雙方同分時須設定高於目前比分。</p><p class="error" id="target-error"></p><button class="btn primary" id="target-save">確認修改</button>`,'修改目標分數');
@@ -87,14 +106,18 @@ function endGameDialog(game,early=false){
  const g=early?pauseClock(game):game;if(early)put(g);
  const scores=stateOf(g).scores,times=clockTotals(g);
  modal(`<p>${early?'選擇提前結束結果，或中斷比賽不判勝負。':`${esc(g.players[g.winner])} 獲勝！`}</p><h3>${esc(g.players[0])} ${scores[0]} : ${scores[1]} ${esc(g.players[1])}</h3><p>比賽用時：${times?duration(times[0]+times[1]):'未記錄'}</p>${early?`<label>比賽結果<select id="end-result"><option value="interrupted">中斷比賽（不判勝負）</option>${g.players.map((n,i)=>`<option value="${i}">${esc(n)} 獲勝</option>`).join('')}</select></label>`:''}${matchStats(g)}<p class="note">保存後可在對局歷史查看或匯出 JSON；不保存會移除此場紀錄。</p><div class="actions"><button class="btn primary" id="end-keep" autofocus>保存記錄</button><button class="btn" id="end-discard">不保存記錄</button></div>`,'比賽結束');
+ let handled=false;
  const complete=keep=>{
+  if(handled)return;handled=true;
   const result=$('#end-result')?.value;
   $('#modal').close();
   if(keep){put(early?finishGame(g,result==='interrupted'?null:Number(result),result==='interrupted'?'interrupted':'concession'):g);notify('比賽記錄已保存。');}
-  else{games=games.filter(x=>x.id!==g.id);current=null;save();render();notify('本場已結束，不保存記錄。');}
+  else{games=games.filter(x=>x.id!==g.id);save();notify('本場已結束，不保存記錄。');}
+  current=null;draft=null;selection=null;render();
  };
  $('#end-keep').onclick=()=>complete(true);
  $('#end-discard').onclick=()=>complete(false);
+ if(!early){$('[data-close]').onclick=()=>complete(true);$('#modal').addEventListener('close',()=>{if(!handled)complete(true);},{once:true});}
  $('#end-keep').focus();
 }
 function updateClocks(){
@@ -165,7 +188,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261123.29',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261123.30',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
