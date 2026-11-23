@@ -291,3 +291,8 @@ test('zero-point handover annotates the current ball on the shooters side withou
  const reversed=scoreboardPage(g,{swapped:true});assert.match(reversed,/class="score-record mark-only" style="grid-column:1" data-record-player="1" data-record-score="3"/);
  g=undo(g);html=scoreboardPage(g);assert.doesNotMatch(html,/aria-label="犯規">×/);assert.match(html,/aria-label="安全球">△/);
 });
+
+test('ball layout allocates height only to visible scoring rows and preserves completed rack records',()=>{
+ let g=createGame(['甲','乙'],10),html=scoreboardPage(g);assert.match(html,/--ball-row-count:11/);assert.equal((html.match(/class="ball-row [^"]*" hidden/g)||[]).length,5);
+ g=addTurn(createGame(['甲','乙'],100),{balls:14,outcome:'continue',rackEnd:14});html=scoreboardPage(g);assert.match(html,/--ball-row-count:16/);assert.equal((html.match(/class="record-dot"/g)||[]).length,14);
+});
