@@ -96,8 +96,8 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 
 .score-record.mark-only .turn-mark{position:static;margin:0}
 
-/* Fill the actual row space instead of limiting balls to fixed pixel sizes. */
-.ball-rows{gap:1px}
+/* Fill the actual row space, leaving a small responsive gap between balls. */
+.ball-rows{gap:clamp(3px,.45dvh,6px)}
 .ball-row,.picker-header{grid-template-columns:minmax(16px,1fr) minmax(0,2fr) minmax(16px,1fr)}
 .ball-center .pool-ball{width:min(100cqh,100cqw);height:auto;aspect-ratio:1 / 1}
 .ball-center .pool-ball>span{font-size:min(36cqh,36cqw)}
