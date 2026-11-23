@@ -1,4 +1,4 @@
-import {stateOf,clockTotals,visitRecords,rackState,tacticalStats} from './engine.js?v=20261123.43';
+import {stateOf,clockTotals,visitRecords,rackState,tacticalStats} from './engine.js?v=20261123.44';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function duration(ms){if(ms==null)return '未記錄';const sec=Math.floor(Math.max(0,ms)/1000);return `${Math.floor(sec/3600).toString().padStart(2,'0')}:${Math.floor(sec%3600/60).toString().padStart(2,'0')}:${(sec%60).toString().padStart(2,'0')}`;}
 const colors=['#fff','#e9b825','#2467be','#c73e38','#6947a3','#e97925','#277e5c','#973e46','#182123','#e9b825','#2467be','#c73e38','#6947a3','#e97925','#277e5c','#973e46'];
@@ -16,7 +16,10 @@ function pickerCell(game,player,n,side,{unstarted,done,paused,rack,selection}){
  const groups=[];for(const symbol of marks){const last=groups.at(-1);if(last?.symbol===symbol)last.count++;else groups.push({symbol,count:1});}
  const markText=groups.map(m=>m.symbol+(m.count>1?'’':'')).join('');
  const markLabel=groups.map(m=>(m.symbol==='△'?'安全球':m.symbol==='x3'?'連續三犯':'犯規')+(m.count>1?m.count+'次':'')).join('、');
- const annotation=marks.length||zeroHandover?`<span class="turn-mark" style="--mark-chars:${Math.max(1,markText.length+(zeroHandover?1:0))}" aria-label="${markLabel||'零分換手'}">${zeroHandover?'−':''}${markText}</span>`:'';
+ const safetyCount=marks.filter(m=>m==='△').length,foulCount=marks.filter(m=>m==='×').length;
+ const safetyText=safetyCount?'△'+(safetyCount>1?'’':''):'',foulText=marks.includes('x3')?'x3':foulCount?'×'+(foulCount>1?'’':''):'';
+ const annotation=marks.length||zeroHandover?`<span class="turn-mark" aria-label="${markLabel||'零分換手'}"><span class="mark-foul" style="--mark-chars:${Math.max(1,foulText.length)}">${foulText}</span><span class="mark-zero">${zeroHandover?'−':''}</span><span class="mark-safety" style="--mark-chars:${Math.max(1,safetyText.length)}">${safetyText}</span></span>`:'';
+
  if(!unstarted){
   const owner=n>0?rack.owners[n]:null;
   const preview=selection?.player===player&&n>rack.count&&n<=selection.end;

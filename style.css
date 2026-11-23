@@ -114,3 +114,12 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 .match-bottom>.bottom-actions{flex-shrink:0}
 @media(max-width:540px){.ball-picker{grid-template-rows:18px minmax(0,1fr)}.picker-header{gap:3px}.match-bottom{gap:4px}}
 @media(max-height:650px){.ball-picker{grid-template-rows:16px minmax(0,1fr)}}
+
+/* Anchor the dot independently; use equal annotation lanes on either side. */
+.score-record{--dot-size:min(15px,60cqh,28cqw);--mark-gap:min(2px,3cqw);padding:0;display:grid;place-items:center;position:relative}
+.score-record .record-dot{width:var(--dot-size);grid-area:1/1;justify-self:center}
+.score-record .turn-mark,.score-record.mark-only .turn-mark{position:absolute;inset:0;display:block;font-size:inherit;pointer-events:none}
+.turn-mark .mark-foul,.turn-mark .mark-safety{position:absolute;top:50%;transform:translateY(-50%);width:calc(50% - var(--dot-size)/2 - var(--mark-gap));font-size:min(14px,65cqh,calc(32cqw / var(--mark-chars,1)));line-height:1;white-space:nowrap}
+.turn-mark .mark-foul{left:0;text-align:right}.turn-mark .mark-safety{right:0;text-align:left}
+.turn-mark .mark-zero{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:min(14px,65cqh,25cqw);line-height:1}
+.score-record:not(.mark-only) .mark-zero{top:85%;font-size:min(8px,20cqh,20cqw)}
