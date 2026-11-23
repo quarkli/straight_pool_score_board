@@ -1,4 +1,4 @@
-import {stateOf,clockTotals,visitRecords,rackState,tacticalStats} from './engine.js?v=20261123.35';
+import {stateOf,clockTotals,visitRecords,rackState,tacticalStats} from './engine.js?v=20261123.36';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function duration(ms){if(ms==null)return '未記錄';const sec=Math.floor(Math.max(0,ms)/1000);return `${Math.floor(sec/3600).toString().padStart(2,'0')}:${Math.floor(sec%3600/60).toString().padStart(2,'0')}:${(sec%60).toString().padStart(2,'0')}`;}
 const colors=['#fff','#e9b825','#2467be','#c73e38','#6947a3','#e97925','#277e5c','#973e46','#182123','#e9b825','#2467be','#c73e38','#6947a3','#e97925','#277e5c','#973e46'];
@@ -9,14 +9,14 @@ function pickerCell(game,player,n,side,{unstarted,done,paused,rack,selection}){
  const column=side?3:1;
  const marks=[];let end=0;
  for(const r of rack.rows){end+=r.balls;
-  const symbol=r.outcome==='safety'?'△':['foul','scratch','break-foul'].includes(r.outcome)?'×':'';
-  if(end>0&&symbol&&r.player===player&&end===n)marks.push(symbol);
+  const symbol=r.third?'x3':r.outcome==='safety'?'△':['foul','scratch','break-foul'].includes(r.outcome)?'×':'';
+  if(end>0&&symbol&&r.player===player&&end===n){if(r.third){marks.splice(0,marks.length,...marks.filter(m=>m==='△'),'x3');}else marks.push(symbol);}
  }
- const annotation=marks.length?`<span class="turn-mark" aria-label="${marks.map(m=>m==='△'?'安全球':'犯規').join('、')}">${marks.join('')}</span>`:'';
+ const annotation=marks.length?`<span class="turn-mark" aria-label="${marks.map(m=>m==='△'?'安全球':m==='x3'?'連續三犯':'犯規').join('、')}">${marks.join('')}</span>`:'';
  if(!unstarted){
   const owner=n>0?rack.owners[n]:null;
   const preview=selection?.player===player&&n>rack.count&&n<=selection.end;
-  return owner===player||preview||annotation?`<span class="score-record${owner===player||preview?'':' mark-only'}" style="grid-column:${column}" data-record-player="${player}" data-record-score="${n}" role="img" aria-label="${esc(game.players[player])} ${owner===player||preview?'已記錄第 '+n+' 顆進球':'第 '+n+' 球位置，零分換手'}${marks.length?'，'+marks.map(m=>m==='△'?'安全球':'犯規').join('、'):''}">${owner===player||preview?'<span class="record-dot" aria-hidden="true"></span>':''}${annotation}</span>`:'';
+  return owner===player||preview||annotation?`<span class="score-record${owner===player||preview?'':' mark-only'}" style="grid-column:${column}" data-record-player="${player}" data-record-score="${n}" role="img" aria-label="${esc(game.players[player])} ${owner===player||preview?'已記錄第 '+n+' 顆進球':'第 '+n+' 球位置，零分換手'}${marks.length?'，'+marks.map(m=>m==='△'?'安全球':m==='x3'?'連續三犯':'犯規').join('、'):''}">${owner===player||preview?'<span class="record-dot" aria-hidden="true"></span>':''}${annotation}</span>`:'';
  }
  if(n>0&&n>game.target-stateOf(game).scores[player])return '';
  const selected=selection?.player===player&&((n===0&&selection.balls===0)||(n>0&&n<=selection.balls));

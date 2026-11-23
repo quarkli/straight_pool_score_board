@@ -317,3 +317,15 @@ test('target-limited balls hide without removing or repacking their grid rows',(
  g=addTurn(g,{balls:3,outcome:'miss',rackEnd:3});html=scoreboardPage(g);
  assert.match(html,/--ball-row-count:16/);assert.equal((html.match(/class="ball-row [^"]*" hidden/g)||[]).length,0);
 });
+
+test('warned third foul replaces same-position foul crosses with x3 without adding dots',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'miss',rackEnd:5});
+ for(let i=0;i<3;i++){g=addTurn(g,{balls:0,outcome:'foul',warned:i===2,thirdChoice:'continue'});if(i<2)g=addTurn(g,{balls:0,outcome:'miss'});}
+ const html=scoreboardPage(g);assert.match(html,/data-record-player="1" data-record-score="5"[^]*?aria-label="連續三犯">x3<\/span>/);
+ assert.doesNotMatch(html,/>××x3|>×××/);assert.equal((html.match(/class="record-dot"/g)||[]).length,5);
+ assert.equal(stateOf(g).scores[1],-18);assert.equal(stateOf(g).fouls[1],0);
+});
+test('third foul with no scored balls still leaves the cue ball unmarked',()=>{
+ let g=createGame(['甲','乙']);for(let i=0;i<3;i++){g=addTurn(g,{balls:0,outcome:'foul',warned:i===2,thirdChoice:'continue'});if(i<2)g=addTurn(g,{balls:0,outcome:'miss'});}
+ assert.doesNotMatch(scoreboardPage(g),/class="turn-mark"|data-record-score="0"/);
+});

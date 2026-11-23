@@ -1,10 +1,10 @@
-import {installApp,updateInstallButtons} from './pwa.js?v=20261123.35';
-import {bindDeletion} from './deletion.js?v=20261123.35';
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261123.35';
-import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261123.35';
-import {rulesPage,tableDiagram} from './rules.js?v=20261123.35';
-import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261123.35';
-import {matchHistoryPage} from './history.js?v=20261123.35';
+import {installApp,updateInstallButtons} from './pwa.js?v=20261123.36';
+import {bindDeletion} from './deletion.js?v=20261123.36';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261123.36';
+import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261123.36';
+import {rulesPage,tableDiagram} from './rules.js?v=20261123.36';
+import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261123.36';
+import {matchHistoryPage} from './history.js?v=20261123.36';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1',TARGET_PREF='straight-pool-target-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -161,7 +161,7 @@ function pickScore(player,balls,end=null){
     modal(`<h2>開球犯規，已扣 2 分</h2><p>對手可接收現況，或要求原開球者重新開球。</p><div class="actions"><button class="btn" id="accept-break">接收現況</button><button class="btn primary" id="retry-break">要求重新開球</button></div>`);
     $('#accept-break').onclick=()=>$('#modal').close();$('#retry-break').onclick=()=>{const revised=structuredClone(currentGame());revised.events.at(-1).rebreak=true;$('#modal').close();put(revised);};
    }else if(row.third){
-    modal(`<div class="warning-count">−16</div><h2>第三次連續犯規</h2><p class="warning-message">一般犯規扣 1 分，再追加扣 15 分，犯規計數已歸零。<br>請由對手選擇後續處理（日本 NBA 規則）。</p><div class="actions"><button class="btn primary" id="third-rerack">重新排球</button><button class="btn" id="third-continue">繼續擊打</button></div><p class="note">重新排球：重排 15 顆，由犯規者重新開球。<br>繼續擊打：保留現況，由對手接手；洗袋時依規定取得頭線後手中球。</p>`);
+    modal(`<div class="warning-count">−16</div><h2>x3 · 第三次連續犯規</h2><p class="warning-message">一般犯規扣 1 分，再追加扣 15 分，犯規計數已歸零。<br>請由對手選擇後續處理（日本 NBA 規則）。</p><div class="actions"><button class="btn primary" id="third-rerack">重新排球</button><button class="btn" id="third-continue">繼續擊打</button></div><p class="note">重新排球：重排 15 顆，由犯規者重新開球。<br>繼續擊打：保留現況，由對手接手；洗袋時依規定取得頭線後手中球。</p>`);
     const choose=choice=>{const revised=structuredClone(currentGame());revised.events.at(-1).thirdChoice=choice;delete revised.rackClearedAt;$('#modal').close();put(revised);};
     $('#third-rerack').onclick=()=>choose('rerack');$('#third-continue').onclick=()=>choose('continue');
    }
@@ -188,7 +188,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261123.35',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261123.36',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
