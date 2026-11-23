@@ -137,26 +137,26 @@ test('lowering target to a reached score immediately finishes and JSON reload re
 test('target changes reject invalid values and a tied finish',()=>{
  let g=turn(start(),5);g=turn(g,5);assert.throws(()=>changeTarget(g,5),/同分/);assert.throws(()=>changeTarget(g,0));assert.throws(()=>changeTarget(g,3.5));
 });
-test('rack openings merge partial entries and count each rerack, not every handover',()=>{
- let g=turn(start(),1,'continue');assert.equal(tacticalStats(g)[0].openingEvaluated,0);
- g=turn(g,1,'miss');let a=tacticalStats(g);assert.equal(a[0].openingSuccess,1);assert.equal(a[0].openingEvaluated,1);
- g=turn(g,12,'continue',{rackEnd:14});a=tacticalStats(g);assert.equal(a[1].openings,0);
+test('match initial opening is excluded, later rack openings merge partial entries',()=>{
+ let g=turn(start(),1,'continue');assert.equal(tacticalStats(g)[0].openings,0);
+ g=turn(g,1,'miss');let a=tacticalStats(g);assert.equal(a[0].openingSuccess,0);assert.equal(a[0].openingEvaluated,0);
+ g=turn(g,12,'continue',{rackEnd:14});assert.equal(tacticalStats(g)[1].openings,0);
  g=turn(g,1,'continue',{rackEnd:1});assert.equal(tacticalStats(g)[1].openings,1);assert.equal(tacticalStats(g)[1].openingEvaluated,0);
  g=turn(g,1,'miss',{rackEnd:2});a=tacticalStats(g);assert.equal(a[1].openingSuccess,1);assert.equal(a[1].openingEvaluated,1);
 });
-test('safety openings fail even above two balls, a one-ball attack fails, and all-15 starts a new opening',()=>{
- let g=turn(start(),3,'safety');assert.equal(tacticalStats(g)[0].openingSuccess,0);assert.equal(tacticalStats(g)[0].openingEvaluated,1);
- g=turn(start(),1);assert.equal(tacticalStats(g)[0].openingSuccess,0);
- g=turn(start(),15,'continue',{rackEnd:15});g=turn(g,0,'miss');const a=tacticalStats(g)[0];assert.equal(a.openings,2);assert.equal(a.openingEvaluated,2);assert.equal(a.openingSuccess,1);
+test('later safety and one-ball openings fail and all-15 initial rack is excluded',()=>{
+ let g=turn(start(),14,'continue');g=turn(g,3,'safety');let a=tacticalStats(g)[0];assert.equal(a.openingSuccess,0);assert.equal(a.openingEvaluated,1);
+ g=turn(start(),14,'continue');g=turn(g,1);assert.equal(tacticalStats(g)[0].openingSuccess,0);assert.equal(tacticalStats(g)[0].openingEvaluated,1);
+ g=turn(start(),15,'continue',{rackEnd:15});g=turn(g,0,'miss');a=tacticalStats(g)[0];assert.equal(a.openings,1);assert.equal(a.openingEvaluated,1);assert.equal(a.openingSuccess,0);
 });
-test('forced rebreak and stalemate create new rack-opening attempts',()=>{
- let g=turn(start(),0,'break-foul',{rebreak:true});g=turn(g,2,'miss');let a=tacticalStats(g)[0];assert.equal(a.openings,2);assert.equal(a.openingEvaluated,2);assert.equal(a.openingSuccess,1);
+test('initial forced rebreak stays excluded and later stalemate starts an eligible opening',()=>{
+ let g=turn(start(),0,'break-foul',{rebreak:true});g=turn(g,2,'miss');let a=tacticalStats(g)[0];assert.equal(a.openings,0);assert.equal(a.openingEvaluated,0);assert.equal(a.openingSuccess,0);
  g.events.push({type:'stalemate',breaker:1});g=turn(g,2,'miss');assert.equal(tacticalStats(g)[1].openingSuccess,1);
 });
-test('opening aggregates are weighted by evaluated racks and do not mutate saved JSON',()=>{
- let a=turn(start(),14,'continue');a=turn(a,0,'miss');a=finishGame(a,0);
+test('opening aggregates exclude initial racks without mutating saved JSON',()=>{
+ let a=turn(start(),14,'continue');a=turn(a,2,'miss');a=finishGame(a,0);
  let b=turn(start(),2,'miss');b=finishGame(b,0);
- const original=JSON.stringify([a,b]),p=playerStats([a,b]).find(p=>p.name==='甲');assert.equal(p.openings,3);assert.equal(p.openingEvaluated,3);assert.equal(p.openingSuccess,2);assert.equal(JSON.stringify([a,b]),original);
+ const original=JSON.stringify([a,b]),p=playerStats([a,b]).find(p=>p.name==='甲');assert.equal(p.openings,1);assert.equal(p.openingEvaluated,1);assert.equal(p.openingSuccess,1);assert.equal(JSON.stringify([a,b]),original);
 });
 
 test('handicap replaces prior credit without changing legal balls, runs, fouls or shooter',()=>{

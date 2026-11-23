@@ -253,7 +253,7 @@ test('compact appearance entries use points, points-minus-penalty and points-S w
  assert.match(opening,/>0-2<\/span>/);
 });
 test('match and history show defensive and rack-opening success rates with counts',()=>{
- let g=addTurn(createGame(['甲','乙']),{balls:2,outcome:'safety'});g=addTurn(g,{balls:0,outcome:'miss'});
+ let g=addTurn(createGame(['甲','乙']),{balls:14,outcome:'continue'});g=addTurn(g,{balls:2,outcome:'safety'});g=addTurn(g,{balls:0,outcome:'miss'});
  for(const html of [matchStats(g),matchHistoryPage([g],{})]){assert.match(html,/防守成功率/);assert.match(html,/開局成功率/);assert.match(html,/100\.0%（1／1）/);assert.match(html,/0\.0%（0／1）/);}
 });
 

@@ -171,23 +171,24 @@ export function visitRecords(game,player){
  }
  return groups;
 }
-// Each rack's first recorded attack is one opening; uncompleted attacks stay pending.
+// Exclude the initial match rack (including repeated opening breaks). Later rack attacks stay pending until completed.
 export function rackOpeningStats(game){
  const stats=[0,1].map(()=>({openings:0,openingEvaluated:0,openingSuccess:0}));
- const rows=stateOf(game).rows;let index=0,count=0,fresh=true,reset=false,attack=null;
+ const rows=stateOf(game).rows;let index=0,count=0,fresh=true,reset=false,attack=null,initialRack=true;
  const end=safety=>{if(!attack)return;const a=stats[attack.player];a.openingEvaluated++;if(!safety&&attack.balls>=2)a.openingSuccess++;attack=null;};
- const begin=p=>{if(reset){count=0;fresh=true;reset=false;}if(fresh){attack={player:p,balls:0};stats[p].openings++;fresh=false;}};
+ const begin=p=>{if(reset){count=0;fresh=true;reset=false;}if(fresh){if(!initialRack){attack={player:p,balls:0};stats[p].openings++;}fresh=false;}};
  for(const event of game.events){
-  if(event.type==='stalemate'){attack=null;reset=true;continue;}
+  if(event.type==='stalemate'){attack=null;reset=true;initialRack=false;continue;}
   if(event.type!=='turn')continue;
   const row=rows[index++];begin(row.player);
   const limit=row.rackEnd===15||(!row.rackEnd&&row.balls===15&&count===0)?15:14;
   for(let i=0;i<row.balls;i++){
    begin(row.player);count++;if(attack?.player===row.player)attack.balls++;
-   if(count>=limit){end(i===row.balls-1&&row.outcome==='safety');reset=true;}
+   if(count>=limit){end(i===row.balls-1&&row.outcome==='safety');reset=true;initialRack=false;}
   }
   if(row.outcome!=='continue'||row.total>=game.target)end(row.outcome==='safety');
-  if((row.third&&row.thirdChoice!=='continue')||(row.outcome==='break-foul'&&row.rebreak))reset=true;
+  if(row.third&&row.thirdChoice!=='continue'){reset=true;initialRack=false;}
+  if(row.outcome==='break-foul'&&row.rebreak)reset=true;
  }
  return stats;
 }
