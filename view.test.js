@@ -284,11 +284,11 @@ test('zero-point handover annotates the current ball on the shooters side withou
  let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss',rackEnd:3});
  g=addTurn(g,{balls:0,outcome:'safety'});
  let html=scoreboardPage(g),cell=html.match(/<span class="score-record mark-only"[^>]*data-record-player="1" data-record-score="3"[^]*?<\/span><\/span>/)[0];
- assert.match(cell,/>△<\/span>/);assert.doesNotMatch(cell,/record-dot/);assert.equal((html.match(/class="record-dot"/g)||[]).length,3);
+ assert.match(cell,/>−△<\/span>/);assert.doesNotMatch(cell,/record-dot/);assert.equal((html.match(/class="record-dot"/g)||[]).length,3);
  g=addTurn(g,{balls:0,outcome:'foul'});html=scoreboardPage(g);assert.equal((html.match(/class="record-dot"/g)||[]).length,3);
- assert.match(html,/data-record-player="0" data-record-score="3"[^]*?aria-label="犯規">×/);
+ assert.match(html,/data-record-player="0" data-record-score="3"[^]*?aria-label="犯規">−×/);
  const reversed=scoreboardPage(g,{swapped:true});assert.match(reversed,/class="score-record mark-only" style="grid-column:1" data-record-player="1" data-record-score="3"/);
- g=undo(g);html=scoreboardPage(g);assert.doesNotMatch(html,/aria-label="犯規">×/);assert.match(html,/aria-label="安全球">△/);
+ g=undo(g);html=scoreboardPage(g);assert.doesNotMatch(html,/aria-label="犯規">−×/);assert.match(html,/aria-label="安全球">−△/);
 });
 
 test('ball layout keeps all sixteen row positions when target hides excess balls',()=>{
@@ -299,10 +299,10 @@ test('ball layout keeps all sixteen row positions when target hides excess balls
 test('zero-point safety and foul at ball five mark the departing shooter, never the cue ball',()=>{
  let g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'miss',rackEnd:5});
  g=addTurn(g,{balls:0,outcome:'foul'});
- let html=scoreboardPage(g);assert.match(html,/class="score-record mark-only"[^>]*data-record-player="1" data-record-score="5"[^]*?aria-label="犯規">×/);
+ let html=scoreboardPage(g);assert.match(html,/class="score-record mark-only"[^>]*data-record-player="1" data-record-score="5"[^]*?aria-label="犯規">−×/);
  assert.equal((html.match(/class="record-dot"/g)||[]).length,5);assert.doesNotMatch(html,/data-record-score="0"/);
  g=addTurn(g,{balls:0,outcome:'safety'});html=scoreboardPage(g);
- assert.match(html,/data-record-player="0" data-record-score="5"[^]*?aria-label="安全球">△/);
+ assert.match(html,/data-record-player="0" data-record-score="5"[^]*?aria-label="安全球">−△/);
  assert.equal((html.match(/class="record-dot"/g)||[]).length,5);
 });
 test('zero scoring after a rerack does not carry a handover mark to zero',()=>{
@@ -321,8 +321,8 @@ test('target-limited balls hide without removing or repacking their grid rows',(
 test('warned third foul replaces same-position foul crosses with x3 without adding dots',()=>{
  let g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'miss',rackEnd:5});
  for(let i=0;i<3;i++){g=addTurn(g,{balls:0,outcome:'foul',warned:i===2,thirdChoice:'continue'});if(i<2)g=addTurn(g,{balls:0,outcome:'miss'});}
- const html=scoreboardPage(g);assert.match(html,/data-record-player="1" data-record-score="5"[^]*?aria-label="連續三犯">x3<\/span>/);
- assert.doesNotMatch(html,/>××x3|>×××/);assert.equal((html.match(/class="record-dot"/g)||[]).length,5);
+ const html=scoreboardPage(g);assert.match(html,/data-record-player="1" data-record-score="5"[^]*?aria-label="連續三犯">−x3<\/span>/);
+ assert.doesNotMatch(html,/>−××x3|>−×××/);assert.equal((html.match(/class="record-dot"/g)||[]).length,5);
  assert.equal(stateOf(g).scores[1],-18);assert.equal(stateOf(g).fouls[1],0);
 });
 test('third foul with no scored balls still leaves the cue ball unmarked',()=>{
@@ -333,13 +333,21 @@ test('third foul with no scored balls still leaves the cue ball unmarked',()=>{
 test('repeated zero-point safeties use prime marks instead of repeated triangles and undo restores count',()=>{
  let g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'miss',rackEnd:5});
  for(let i=0;i<3;i++){g=addTurn(g,{balls:0,outcome:'safety'});if(i<2)g=addTurn(g,{balls:0,outcome:'miss'});}
- let html=scoreboardPage(g);assert.match(html,/aria-label="安全球3次">△’’<\/span>/);assert.doesNotMatch(html,/>△△/);assert.equal((html.match(/class="record-dot"/g)||[]).length,5);
- g=undo(g);html=scoreboardPage(g);assert.match(html,/aria-label="安全球2次">△’<\/span>/);
+ let html=scoreboardPage(g);assert.match(html,/aria-label="安全球3次">−△’’<\/span>/);assert.doesNotMatch(html,/>−△△/);assert.equal((html.match(/class="record-dot"/g)||[]).length,5);
+ g=undo(g);html=scoreboardPage(g);assert.match(html,/aria-label="安全球2次">−△’<\/span>/);
 });
 test('repeated zero-point fouls use prime marks until third-foul x3 replaces them',()=>{
  let g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'miss',rackEnd:5});
  for(let i=0;i<2;i++){g=addTurn(g,{balls:0,outcome:'foul'});g=addTurn(g,{balls:0,outcome:'miss'});}
- assert.match(scoreboardPage(g),/aria-label="犯規2次">×’<\/span>/);
+ assert.match(scoreboardPage(g),/aria-label="犯規2次">−×’<\/span>/);
  g=addTurn(g,{balls:0,outcome:'foul',warned:true,thirdChoice:'continue'});
- const html=scoreboardPage(g);assert.match(html,/aria-label="連續三犯">x3<\/span>/);assert.doesNotMatch(html,/>××|>×’x3/);
+ const html=scoreboardPage(g);assert.match(html,/aria-label="連續三犯">−x3<\/span>/);assert.doesNotMatch(html,/>−××|>−×’x3/);
+});
+
+test('zero-point miss after scoring leaves a dash at the shooters current ball without adding a dot',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'miss',rackEnd:5});
+ g=addTurn(g,{balls:0,outcome:'miss'});
+ let html=scoreboardPage(g);assert.match(html,/data-record-player="1" data-record-score="5"[^]*?aria-label="零分換手">−<\/span>/);
+ assert.equal((html.match(/class="record-dot"/g)||[]).length,5);assert.doesNotMatch(html,/data-record-score="0"/);
+ g=undo(g);assert.doesNotMatch(scoreboardPage(g),/data-record-player="1" data-record-score="5"/);
 });
