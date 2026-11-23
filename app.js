@@ -1,11 +1,11 @@
-import {createFullscreenWakeLock} from './wake-lock.js?v=20261123.41';
-import {installApp,updateInstallButtons} from './pwa.js?v=20261123.41';
-import {bindDeletion} from './deletion.js?v=20261123.41';
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261123.41';
-import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261123.41';
-import {rulesPage,tableDiagram} from './rules.js?v=20261123.41';
-import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261123.41';
-import {matchHistoryPage} from './history.js?v=20261123.41';
+import {createFullscreenWakeLock} from './wake-lock.js?v=20261123.42';
+import {installApp,updateInstallButtons} from './pwa.js?v=20261123.42';
+import {bindDeletion} from './deletion.js?v=20261123.42';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261123.42';
+import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261123.42';
+import {rulesPage,tableDiagram} from './rules.js?v=20261123.42';
+import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261123.42';
+import {matchHistoryPage} from './history.js?v=20261123.42';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1',TARGET_PREF='straight-pool-target-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -85,6 +85,7 @@ async function action(a){
  if(a==='install'){await installApp({show:html=>modal(html,'本地安裝'),notify});return;}
  if(a==='load-demo'){await loadDemo();return;}
  if(a==='history-reset'){historyFilters={from:'',to:'',player:'',opponent:''};render();return;}
+ if(a==='score-help'){modal('<p>首次記分前，可從任一側選擇進球數；先記分者為先攻。開始後直接按中央球號，計入當前選手。</p><p>球號表示本場排球累計進球位置，例如已進 3 顆後按 6，只新增 3 分。母球表示零分。</p><p>白色圓點代表該選手的進球；△ 代表安全球，× 代表犯規，x3 代表連續三犯。已有進球後零分換手以 − 表示，安全球為 −△，犯規為 −×，不增加得分圓點；零分母球不作標記。重複標記以撇號累計。</p><p>14／15 顆直接記分並進入下一場排球，延續當前選手。修正可撤銷上一筆。紀錄中 6 表示得 6 分，5-1 表示進 5 球後扣 1 分，7S 表示進 7 球後安全球換手。</p>','記分說明');return;}
  if(a==='match-stats'){const g=currentGame();if(g)modal(matchStats(g),'本場雙方統計');return;}
  if(a==='start'){
   if(currentGame()||storageError)return;const g=readyGame();
@@ -192,7 +193,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261123.41',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261123.42',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}

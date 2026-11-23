@@ -267,9 +267,9 @@ test('breaker label appears only after first confirmed score and follows identit
 test('scoring header underlines the active display side and follows swap and handover',()=>{
  const initial=createGame(['甲','乙']);assert.doesNotMatch(scoreboardPage(initial),/class="active-scoring-side"/);
  let g=addTurn(initial,{balls:2,outcome:'miss'});
- assert.match(scoreboardPage(g),/class="active-scoring-side" aria-current="true">右側記分/);
- assert.match(scoreboardPage(g,{swapped:true}),/class="active-scoring-side" aria-current="true">左側記分/);
- g=addTurn(g,{balls:0,outcome:'safety'});assert.match(scoreboardPage(g),/class="active-scoring-side" aria-current="true">左側記分/);
+ assert.match(scoreboardPage(g),/class="active-scoring-side" aria-current="true">後攻/);
+ assert.match(scoreboardPage(g,{swapped:true}),/class="active-scoring-side" aria-current="true">後攻/);
+ g=addTurn(g,{balls:0,outcome:'safety'});assert.match(scoreboardPage(g),/class="active-scoring-side" aria-current="true">先攻/);
  assert.doesNotMatch(scoreboardPage(finishGame(g,0)),/class="active-scoring-side"/);
 });
 
@@ -350,4 +350,9 @@ test('zero-point miss after scoring leaves a dash at the shooters current ball w
  let html=scoreboardPage(g);assert.match(html,/data-record-player="1" data-record-score="5"[^]*?aria-label="零分換手">−<\/span>/);
  assert.equal((html.match(/class="record-dot"/g)||[]).length,5);assert.doesNotMatch(html,/data-record-score="0"/);
  g=undo(g);assert.doesNotMatch(scoreboardPage(g),/data-record-player="1" data-record-score="5"/);
+});
+
+test('scoreboard has scoring help, hides undecided order labels and uses the new rack name',()=>{
+ const initial=scoreboardPage(createGame(['甲','乙']));assert.doesNotMatch(initial,/左側記分|右側記分|>先攻<|>後攻<|picker-footer/);assert.match(initial,/data-action="score-help">記分說明/);
+ const g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss'}),html=scoreboardPage(g);assert.match(html,/第 1 場排球/);assert.match(html,/>先攻<\/span>/);assert.match(html,/>後攻<\/span>/);
 });

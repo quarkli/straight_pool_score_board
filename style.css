@@ -103,3 +103,14 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 .ball-center .pool-ball>span{font-size:min(36cqh,36cqw)}
 .ball-score-button{border-radius:5px}
 .zero-row{padding-bottom:0}
+
+/* Keep side annotations inside their own cell without shifting the central balls. */
+.ball-picker{grid-template-rows:22px minmax(0,1fr);min-width:0}
+.picker-header{gap:8px}.picker-header>span{min-width:0;white-space:nowrap}
+.score-record{overflow:hidden;gap:min(3px,5cqw);padding:0 1px;box-sizing:border-box}
+.score-record .record-dot{width:min(15px,60cqh,30cqw)}
+.score-record .turn-mark{position:static;left:auto;margin:0;flex:none;font-size:min(14px,65cqh,calc(60cqw / var(--mark-chars,1)));line-height:1}
+.score-record.mark-only .turn-mark{font-size:min(14px,65cqh,calc(94cqw / var(--mark-chars,1)))}
+.match-bottom>.bottom-actions{flex-shrink:0}
+@media(max-width:540px){.ball-picker{grid-template-rows:18px minmax(0,1fr)}.picker-header{gap:3px}.match-bottom{gap:4px}}
+@media(max-height:650px){.ball-picker{grid-template-rows:16px minmax(0,1fr)}}
