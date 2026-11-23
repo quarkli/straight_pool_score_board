@@ -127,3 +127,9 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 /* Use one responsive type size for every annotation, including plural marks. */
 .score-record{--annotation-size:min(14px,65cqh,16cqw)}
 .turn-mark .mark-foul,.turn-mark .mark-safety,.turn-mark .mark-zero,.score-record:not(.mark-only) .mark-zero{font-size:var(--annotation-size)}
+
+/* Bring both scoring columns closer to the balls while keeping their dots centered. */
+.score-record{--dot-size:min(19px,70cqh,34cqw);--annotation-size:min(17px,70cqh,20cqw);--mark-gap:min(2px,2cqw);overflow:visible;transform:translateX(8%)}
+.score-record[style*="grid-column:3"]{transform:translateX(-8%)}
+.score-record .record-dot{width:var(--dot-size)}
+.turn-mark .mark-foul,.turn-mark .mark-safety{width:calc(50% - var(--dot-size)/2 - var(--mark-gap));overflow:visible}
