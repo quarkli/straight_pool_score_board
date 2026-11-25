@@ -178,3 +178,17 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
  .turn-mark .mark-icon{height:22px;max-width:none}
  .score-record.mark-only .turn-mark .mark-zero{width:16px;height:16px}
 }
+
+/* Keep the legacy fallback last: unsupported container units in later custom
+   properties otherwise invalidate both left/right anchors at computed-value time. */
+@supports not (width:1cqw){
+ .score-record{--dot-size:19px;--mark-gap:2px}
+ .score-record.mark-only{--handover-half:4.8px}
+ .turn-mark .mark-icon{width:26px;height:22px;max-width:none;top:50%;transform:translateY(-50%)}
+ .turn-mark .mark-third{width:35px}
+ .turn-mark .mark-foul{left:auto;right:calc(50% + 12.5px)}
+ .turn-mark .mark-safety{right:auto;left:calc(50% + 12.5px)}
+ .score-record.mark-only .turn-mark .mark-foul{left:auto;right:calc(50% + 5.8px)}
+ .score-record.mark-only .turn-mark .mark-safety{right:auto;left:calc(50% + 5.8px)}
+ .score-record.mark-only .turn-mark .mark-zero{width:16px;height:16px;max-width:none;left:50%;right:auto;top:50%;transform:translate(-50%,-50%)}
+}

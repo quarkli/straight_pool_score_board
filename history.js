@@ -1,6 +1,6 @@
-import {deleteToolbar,deleteControls} from './deletion.js?v=20261125.52';
-import {stateOf,clockTotals,visitRecords,tacticalStats} from './engine.js?v=20261125.52';
-import {duration} from './scoreboard.js?v=20261125.52';
+import {deleteToolbar,deleteControls} from './deletion.js?v=20261125.53';
+import {stateOf,clockTotals,visitRecords,tacticalStats} from './engine.js?v=20261125.53';
+import {duration} from './scoreboard.js?v=20261125.53';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function localDate(value){const d=new Date(value);return Number.isFinite(d.getTime())?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'';}
 export function filterHistory(games,{from='',to='',player='',opponent=''}={}){
