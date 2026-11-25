@@ -1,3 +1,4 @@
+import {cloneData,newId} from './compatibility.js?v=20261125.52';
 export const VERSION=1;
 export const outcomes=['miss','safety','foul','scratch','break-foul','continue','win'];
 export function createGame(players,target=100,breaker=0){
@@ -5,12 +6,12 @@ export function createGame(players,target=100,breaker=0){
  if(players[0].trim().toLowerCase()===players[1].trim().toLowerCase())throw Error('Use different names for the two players.');
  if(!Number.isInteger(target)||target<1||target>10000)throw Error('Target must be a whole number from 1 to 10,000.');
  if(![0,1].includes(breaker))throw Error('Choose a breaker.');
- return {id:crypto.randomUUID(),players:players.map(p=>p.trim()),target,breaker,startedAt:new Date().toISOString(),events:[],status:'active',winner:null,clock:{elapsedMs:[0,0],runningSince:Date.now(),startedAt:Date.now()}};
+ return {id:newId(),players:players.map(p=>p.trim()),target,breaker,startedAt:new Date().toISOString(),events:[],status:'active',winner:null,clock:{elapsedMs:[0,0],runningSince:Date.now(),startedAt:Date.now()}};
 }
 export function selectOpeningPlayer(game,player){
  if(![0,1].includes(player))throw Error('Choose a breaker.');
- if(game.status!=='active'||game.events.some(e=>e.type==='turn'))return structuredClone(game);
- const g=structuredClone(game);g.breaker=player;
+ if(game.status!=='active'||game.events.some(e=>e.type==='turn'))return cloneData(game);
+ const g=cloneData(game);g.breaker=player;
  if(g.clock){const banked=g.clock.elapsedMs[0]+g.clock.elapsedMs[1];g.clock.elapsedMs=[0,0];g.clock.elapsedMs[player]=banked;}
  return g;
 }
@@ -77,7 +78,7 @@ export function changeTarget(game,target,now=Date.now()){
  if(!Number.isInteger(target)||target<1||target>10000)throw Error('目標分數須為 1–10,000 的整數。');
  const scores=stateOf(game).scores;
  if(scores[0]===scores[1]&&scores[0]>=target)throw Error('雙方同分，請將目標設為高於目前比分，繼續比賽決定勝負。');
- if(target===game.target)return structuredClone(game);
+ if(target===game.target)return cloneData(game);
  const g=settleClock(game,now);g.events.push({type:'target',previousTarget:game.target,target,at:new Date(now).toISOString()});g.target=target;
  if(Math.max(...scores)>=target){g.status='finished';g.finalized=true;g.winner=scores[0]>scores[1]?0:1;g.reason='target';g.endedAt=new Date(now).toISOString();if(g.clock)g.clock.runningSince=null;}
  return g;
@@ -87,7 +88,7 @@ export function setHandicap(game,player,points,now=Date.now()){
  if(![0,1].includes(player)||!Number.isInteger(points)||points< -10000||points>10000)throw Error('讓分須為 -10,000 至 10,000 的整數。');
  const s=stateOf(game),scores=[...s.scores];scores[player]+=points-s.handicaps[player];
  if(scores[0]===scores[1]&&scores[0]>=game.target)throw Error('讓分後雙方同分且達標，請調整讓分或目標。');
- if(points===s.handicaps[player])return structuredClone(game);
+ if(points===s.handicaps[player])return cloneData(game);
  const g=settleClock(game,now);g.events.push({type:'handicap',player,points,at:new Date(now).toISOString()});
  if(Math.max(...scores)>=g.target){g.status='finished';g.finalized=true;g.winner=scores[0]>scores[1]?0:1;g.reason='target';g.endedAt=new Date(now).toISOString();if(g.clock)g.clock.runningSince=null;}
  return g;
@@ -96,9 +97,9 @@ export function renamePlayer(game,player,name){
  if(game.status==='finished'||game.finalized)throw Error('比賽已結束，不能修改姓名。');
  if(![0,1].includes(player))throw Error('請選擇選手。');
  const names=[...game.players];names[player]=String(name).trim();createGame(names,game.target,game.breaker);
- return {...structuredClone(game),players:names};
+ return {...cloneData(game),players:names};
 }
-export function undo(game){if(game.status==='finished'||game.finalized)throw Error('Finished games are read-only.');const g=structuredClone(game);const removed=g.events.pop();if(removed?.type==='target')g.target=removed.previousTarget;delete g.rackClearedAt;g.status='active';g.winner=null;delete g.endedAt;delete g.reason;if(g.clock){g.clock=settleClock(game).clock;g.clock.runningSince=null;}return g;}
+export function undo(game){if(game.status==='finished'||game.finalized)throw Error('Finished games are read-only.');const g=cloneData(game);const removed=g.events.pop();if(removed?.type==='target')g.target=removed.previousTarget;delete g.rackClearedAt;g.status='active';g.winner=null;delete g.endedAt;delete g.reason;if(g.clock){g.clock=settleClock(game).clock;g.clock.runningSince=null;}return g;}
 export function validateHistory(data){
  if(!data||data.schemaVersion!==VERSION||!Array.isArray(data.games)||data.games.length>10000)throw Error('Unsupported JSON. Use a Straight Pool export (schemaVersion 1).');
  const ids=new Set();
@@ -131,7 +132,7 @@ export function clockTotals(game,now=Date.now()){
  return totals;
 }
 export function settleClock(game,now=Date.now()){
- const g=structuredClone(game);
+ const g=cloneData(game);
  if(g.clock){g.clock.elapsedMs=clockTotals(game,now);g.clock.runningSince=game.status==='active'&&game.clock.runningSince!==null?now:null;}
  return g;
 }
@@ -139,7 +140,7 @@ export function pauseClock(game,now=Date.now()){
  const g=settleClock(game,now);if(g.clock)g.clock.runningSince=null;return g;
 }
 export function resumeClock(game,now=Date.now()){
- const g=structuredClone(game);if(g.status!=='active')return g;
+ const g=cloneData(game);if(g.status!=='active')return g;
  if(!g.clock)g.clock={elapsedMs:[0,0],runningSince:null,startedAt:now,partial:game.events.length>0};
  if(g.clock.runningSince===null)g.clock.runningSince=now;
  return g;

@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {cloneData,newId,atIndex} from './compatibility.js';
+test('JSON record cloning works when structuredClone is missing and isolates nested events',()=>{const record={events:[{balls:3}],clock:{elapsedMs:[100,200]},winner:null};const copy=cloneData(record,null);assert.deepEqual(copy,record);copy.events[0].balls=5;copy.clock.elapsedMs[0]=0;assert.equal(record.events[0].balls,3);assert.equal(record.clock.elapsedMs[0],100);});
+test('UUID fallback uses random bytes with v4 version and variant bits',()=>{const id=newId({getRandomValues:bytes=>bytes.fill(255)});assert.match(id,/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);});
+test('array index fallback handles negative and out-of-range indices',()=>{assert.equal(atIndex([1,2,3],-1),3);assert.equal(atIndex([1,2,3],-3),1);assert.equal(atIndex([1,2,3],-4),undefined);assert.equal(atIndex([],0),undefined);assert.equal(atIndex([1,2],Infinity),undefined);});
