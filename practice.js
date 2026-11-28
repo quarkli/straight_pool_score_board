@@ -1,7 +1,7 @@
-import {exportJsonFile} from './json-export.js?v=20261128.81';
-import {cloneData,newId} from './compatibility.js?v=20261128.81';
-import {deleteToolbar,deleteControls,bindDeletion} from './deletion.js?v=20261128.81';
-import {duration,ball} from './scoreboard.js?v=20261128.81';
+import {exportJsonFile} from './json-export.js?v=20261128.82';
+import {cloneData,newId} from './compatibility.js?v=20261128.82';
+import {deleteToolbar,deleteControls,bindDeletion} from './deletion.js?v=20261128.82';
+import {duration,ball} from './scoreboard.js?v=20261128.82';
 const KEY='straight-pool-practice-v1',NAME='straight-pool-practice-name';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function practiceMetrics(session){
