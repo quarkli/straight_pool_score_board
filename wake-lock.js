@@ -1,7 +1,7 @@
 // Fullscreen screen-wake-lock lifecycle; no timers or synthetic user activity.
-export function createFullscreenWakeLock({doc=document,nav=navigator,win=window,onChange=()=>{}}={}){
+export function createFullscreenWakeLock({doc=document,nav=navigator,win=window,onChange=()=>{},shouldHold=()=>true}={}){
  let lock=null,pending=null,epoch=0,status='off';
- const wanted=()=>!!doc.fullscreenElement&&doc.visibilityState==='visible';
+ const wanted=()=>!!doc.fullscreenElement&&doc.visibilityState==='visible'&&shouldHold();
  const set=value=>{if(status!==value){status=value;onChange(value);}};
  async function sync(){
   if(!wanted()){epoch++;const old=lock;lock=null;set('off');if(old)try{await old.release();}catch{}return;}

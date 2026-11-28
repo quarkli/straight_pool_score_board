@@ -285,3 +285,8 @@ dialog.scoring-modal .reason-button[data-reason="foul"],dialog.scoring-modal .re
 .dialog-close:hover{background:#ffdada;color:#981414}.dialog-close:focus-visible{outline:3px solid #bd2525;outline-offset:3px}.dialog-head{gap:12px}
 
 .match-score{font-weight:800}
+
+/* Default low-power rendering: keep colors and contrast without decorative effects. */
+body.score-screen *,body.score-screen *::before,body.score-screen *::after{animation:none!important;transition:none!important;text-shadow:none!important;box-shadow:none!important}
+.ball-center .pool-ball-svg{filter:none}
+.ball-row.scored-ball .pool-ball-svg,.ball-row.target-locked .pool-ball-svg,.ball-row.scored-ball .eight-ball,.ball-row.target-locked .eight-ball{filter:grayscale(1)}
