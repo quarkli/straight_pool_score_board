@@ -225,3 +225,5 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 .picker-header .active-scoring-side{font-size:20px;font-weight:800;color:#fff3b0;text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:4px;line-height:1.2}
 .picker-headers{min-height:30px}.ball-picker{grid-template-rows:30px minmax(0,1fr)}
 @media(max-width:540px),(max-height:650px){.picker-header .active-scoring-side{font-size:16px}.picker-headers{min-height:25px}.ball-picker{grid-template-rows:25px minmax(0,1fr)}}
+
+.picker-headers{grid-template-columns:minmax(0,1fr)}
