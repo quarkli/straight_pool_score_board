@@ -1,12 +1,25 @@
-import {cloneData,newId} from './compatibility.js?v=20261128.65';
-import {createFullscreenWakeLock} from './wake-lock.js?v=20261128.65';
-import {installApp,updateInstallButtons} from './pwa.js?v=20261128.65';
-import {bindDeletion} from './deletion.js?v=20261128.65';
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261128.65';
-import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261128.65';
-import {rulesPage,tableDiagram} from './rules.js?v=20261128.65';
-import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261128.65';
-import {matchHistoryPage} from './history.js?v=20261128.65';
+import {cloneData,newId} from './compatibility.js?v=20261128.66';
+import {createFullscreenWakeLock} from './wake-lock.js?v=20261128.66';
+import {installApp,updateInstallButtons} from './pwa.js?v=20261128.66';
+import {bindDeletion} from './deletion.js?v=20261128.66';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261128.66';
+import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261128.66';
+import {rulesPage,tableDiagram} from './rules.js?v=20261128.66';
+import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261128.66';
+import {matchHistoryPage} from './history.js?v=20261128.66';
+// Accept primary button/link presses immediately, including dynamically rendered controls.
+let suppressPointerClick=false;
+document.addEventListener('pointerdown',event=>{
+ if(!event.isPrimary||event.button!==0)return;
+ suppressPointerClick=false;
+ const control=event.target.closest('button,a[href],summary');
+ if(!control||control.disabled||control.getAttribute('aria-disabled')==='true'||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+ event.preventDefault();event.stopPropagation();suppressPointerClick=true;
+ control.click();
+},true);
+document.addEventListener('click',event=>{
+ if(suppressPointerClick&&event.detail>0){suppressPointerClick=false;event.preventDefault();event.stopImmediatePropagation();}
+},true);
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1',TARGET_PREF='straight-pool-target-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -159,16 +172,6 @@ function pickScore(player,balls,end=null){
  const shotInput=$('#shot-count');let shotsEdited=false;shotInput.addEventListener('input',()=>shotsEdited=true);
  let reasonAccepted=false;
  dialog.querySelectorAll('[data-reason]').forEach(button=>{
- button.addEventListener('pointerdown',event=>{
-  if(!event.isPrimary||event.button!==0||button.disabled||reasonAccepted)return;
-  event.preventDefault();event.stopPropagation();
-  // Consume the compatibility click after the modal closes, avoiding click-through.
-  const swallow=event=>{if(event.detail>0){event.preventDefault();event.stopImmediatePropagation();cleanup();}};
-  const cleanup=()=>{document.removeEventListener('click',swallow,true);document.removeEventListener('pointerdown',cleanup,true);clearTimeout(timer);};
-  const timer=setTimeout(cleanup,1000);
-  document.addEventListener('click',swallow,true);document.addEventListener('pointerdown',cleanup,true);
-  button.click();
- });
  button.onclick=()=>{
   if(reasonAccepted)return;reasonAccepted=true;
   try{
@@ -210,7 +213,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261128.65',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261128.66',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
