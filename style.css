@@ -279,3 +279,7 @@ dialog.scoring-modal .reason-button[data-reason="foul"],dialog.scoring-modal .re
 .ball-row.scored-ball .eight-ball,.ball-row.target-locked .eight-ball{filter:grayscale(1) drop-shadow(0 1px 2px #0005)}
 .ball-row.scored-ball .eight-ball>circle:first-child,.ball-row.scored-ball .eight-ball>circle:nth-child(2),.ball-row.target-locked .eight-ball>circle:first-child,.ball-row.target-locked .eight-ball>circle:nth-child(2){fill:#555}
 @media(max-width:540px){.ball-rows{column-gap:16px}}
+
+.dialog-close{display:inline-flex;align-items:center;justify-content:center;flex:0 0 48px;width:48px;height:48px;min-width:48px;min-height:48px;padding:10px;border:1px solid #df9e9e;border-radius:10px;background:#fff0f0;color:#bf2525;cursor:pointer;touch-action:manipulation}
+.dialog-close svg{width:28px;height:28px;pointer-events:none}
+.dialog-close:hover{background:#ffdada;color:#981414}.dialog-close:focus-visible{outline:3px solid #bd2525;outline-offset:3px}.dialog-head{gap:12px}
