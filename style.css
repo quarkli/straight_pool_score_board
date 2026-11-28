@@ -219,3 +219,5 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 @media(max-height:600px){.scoring-modal .reason-button{padding:12px}.scoring-modal .reason-button strong{font-size:21px}}
 .app-version{font-size:10px;color:#526b5c;white-space:nowrap}
 @media(max-width:540px){.app-version{font-size:8px}}
+
+.history-version{text-align:center;color:#526b5c;font-size:14px;padding:20px 0 12px}
