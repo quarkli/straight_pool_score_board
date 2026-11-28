@@ -10,6 +10,8 @@ export async function installApp({show,notify}){
 }
 if('serviceWorker' in navigator){
  let registration=null,lastCheck=0;
+ const hadController=!!navigator.serviceWorker.controller;let refreshing=false;
+ navigator.serviceWorker.addEventListener('controllerchange',()=>{if(hadController&&!refreshing){refreshing=true;location.reload();}});
  const check=()=>{if(registration&&Date.now()-lastCheck>60000){lastCheck=Date.now();registration.update().catch(()=>{});}};
  const register=()=>navigator.serviceWorker.register(new URL('./sw.js',import.meta.url),{scope:'./',updateViaCache:'none'}).then(r=>{registration=r;check();}).catch(()=>{});
  if(document.readyState==='complete')register();else window.addEventListener('load',register,{once:true});
