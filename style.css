@@ -229,3 +229,5 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 .picker-headers{grid-template-columns:minmax(0,1fr)}
 
 .scoring-modal .reason-button{touch-action:manipulation;user-select:none;-webkit-user-select:none}.scoring-modal .reason-button>*{pointer-events:none}
+
+.ball-center .pool-ball-svg{width:94%;height:94%}
