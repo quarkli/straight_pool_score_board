@@ -458,3 +458,18 @@ test('rerack summary shows both rack net scores instead of ball count',()=>{
  assert.match(inningSummary(g),/class="inning-score">2 - 11<small>甲 - 乙/);
  assert.doesNotMatch(inningSummary(g),/顆合法進球/);
 });
+
+test('handover preview shows the actual newly scored ball numbers',()=>{
+ const numbers=html=>[...html.split('<div class="selected-balls">')[1].split('</div>')[0].matchAll(/fill="#243124">(\d+)<\/text>/g)].map(m=>Number(m[1]));
+ let g=createGame(['甲','乙']);
+ assert.deepEqual(numbers(scoringDialog(g,3,3)),[1,2,3]);
+ g=addTurn(g,{balls:5,outcome:'miss',rackEnd:5});
+ assert.deepEqual(numbers(scoringDialog(g,3,8)),[6,7,8]);
+ assert.deepEqual(numbers(scoringDialog(g,3)),[6,7,8]);
+ assert.deepEqual(numbers(scoringDialog(g,0,0)),[0]);
+ g=addTurn(g,{balls:0,outcome:'foul'});
+ assert.deepEqual(numbers(scoringDialog(g,2,7)),[6,7]);
+ g=addTurn(g,{balls:9,outcome:'continue',rackEnd:14});g.rackClearedAt=g.events.length;
+ assert.deepEqual(numbers(scoringDialog(g,2,2)),[1,2]);
+ assert.deepEqual(numbers(scoringDialog(g,2)),[1,2]);
+});

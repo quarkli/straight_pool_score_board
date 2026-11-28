@@ -1,13 +1,13 @@
-import {createReasonChoice} from './reason-choice.js?v=20261128.78';
-import {cloneData,newId} from './compatibility.js?v=20261128.78';
-import {createFullscreenWakeLock} from './wake-lock.js?v=20261128.78';
-import {installApp,updateInstallButtons} from './pwa.js?v=20261128.78';
-import {bindDeletion} from './deletion.js?v=20261128.78';
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261128.78';
-import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261128.78';
-import {rulesPage,tableDiagram} from './rules.js?v=20261128.78';
-import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261128.78';
-import {matchHistoryPage} from './history.js?v=20261128.78';
+import {createReasonChoice} from './reason-choice.js?v=20261128.79';
+import {cloneData,newId} from './compatibility.js?v=20261128.79';
+import {createFullscreenWakeLock} from './wake-lock.js?v=20261128.79';
+import {installApp,updateInstallButtons} from './pwa.js?v=20261128.79';
+import {bindDeletion} from './deletion.js?v=20261128.79';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261128.79';
+import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261128.79';
+import {rulesPage,tableDiagram} from './rules.js?v=20261128.79';
+import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261128.79';
+import {matchHistoryPage} from './history.js?v=20261128.79';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1',TARGET_PREF='straight-pool-target-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -158,7 +158,7 @@ function pickScore(player,balls,end=null){
   return;
  }
  selection={player,balls,end:end??(balls||0)};render();
- const dialog=$('#modal');dialog.dataset.playerTone=String(player);dialog.innerHTML=scoringDialog(g,balls);dialog.classList.add('scoring-modal');dialog.showModal();
+ const dialog=$('#modal');dialog.dataset.playerTone=String(player);dialog.innerHTML=scoringDialog(g,balls,end);dialog.classList.add('scoring-modal');dialog.showModal();
  dialog.querySelector('[data-close]').onclick=()=>{selection=null;dialog.close();render();};
  const shotInput=$('#shot-count');let shotsEdited=false;shotInput.addEventListener('input',()=>shotsEdited=true);
  const choices=[...dialog.querySelectorAll('[data-reason]')];
@@ -220,7 +220,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261128.78',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261128.79',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
