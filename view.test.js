@@ -203,15 +203,15 @@ test('history supports per-record and filtered bulk deletion controls',()=>{
 test('completed scoreboard reuses finish button and disables score changes',()=>{
  const g=finishGame(createGame(['甲','乙']),0),html=scoreboardPage(g);
  assert.match(html,/比賽結束 · 甲 獲勝 · 唯讀/);
- assert.match(html,/data-action="undo" disabled/);
- assert.match(html,/data-action="finish"[^>]*>結束比賽/);
+ assert.match(html,/data-action="undo"[^>]*disabled/);
+ assert.match(html,/data-action="finish" aria-label="結束比賽"/);
  assert.doesNotMatch(html,/>再來一場<|>結束<\/button>/);
 });
 test('scoreboard opens current-match statistics and uses only this game for both players',()=>{
  let g=addTurn(createGame(['本場甲','本場乙']),{balls:3,outcome:'miss',shots:4});
  g=addTurn(g,{balls:2,outcome:'safety',shots:3});
  const html=matchStats(g);assert.match(html,/本場甲/);assert.match(html,/本場乙/);assert.match(html,/淨得分<\/th><td>3<\/td><td>2<\/td>/);assert.match(html,/出場數<\/th><td>1<\/td><td>1<\/td>/);assert.match(html,/安全球<\/th><td>0<\/td><td>1<\/td>/);
- assert.match(scoreboardPage(g),/data-action="match-stats"[^>]*>統計分析/);
+ assert.match(scoreboardPage(g),/data-action="match-stats" aria-label="統計分析"/);
  assert.doesNotMatch(scoreboardPage(g),/href="#stats">統計分析/);
  assert.match(matchStats(finishGame(g,0)),/比賽結束 · 唯讀紀錄/);
 });
@@ -277,7 +277,7 @@ test('ready board replaces setup with editable names and start button while all 
  const g={...pauseClock(createGame(['A','B'])),status:'ready'},html=scoreboardPage(g);
  assert.match(html,/data-action="start"/);assert.doesNotMatch(html,/setup-form/);assert.equal((html.match(/data-edit-player=/g)||[]).length,2);
  assert.equal((html.match(/data-pick="\d+"[^>]*disabled/g)||[]).length,0);
- assert.match(html,/data-action="clock" disabled/);assert.match(html,/data-handicap-player="0"[^>]*disabled/);
+ assert.match(html,/data-action="clock"[^>]*disabled/);assert.match(html,/data-handicap-player="0"[^>]*disabled/);
 });
 
 test('zero-point handover annotates the current ball on the shooters side without claiming ownership',()=>{
@@ -353,7 +353,7 @@ test('zero-point miss after scoring leaves a dash at the shooters current ball w
 });
 
 test('scoreboard has scoring help, hides undecided order labels and uses the new rack name',()=>{
- const initial=scoreboardPage({...createGame(['甲','乙']),status:'ready'});assert.doesNotMatch(initial,/左側記分|右側記分|>先攻<|>後攻<|picker-footer/);assert.match(initial,/data-action="score-help">記分說明/);
+ const initial=scoreboardPage({...createGame(['甲','乙']),status:'ready'});assert.doesNotMatch(initial,/左側記分|右側記分|>先攻<|>後攻<|picker-footer/);assert.match(initial,/data-action="score-help" aria-label="記分說明"/);
  const g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss'}),html=scoreboardPage(g);assert.match(html,/第 1 場排球/);assert.match(html,/>先攻<\/span>/);assert.match(html,/>後攻<\/span>/);
 });
 
@@ -472,4 +472,14 @@ test('handover preview shows the actual newly scored ball numbers',()=>{
  g=addTurn(g,{balls:9,outcome:'continue',rackEnd:14});g.rackClearedAt=g.events.length;
  assert.deepEqual(numbers(scoringDialog(g,2,2)),[1,2]);
  assert.deepEqual(numbers(scoringDialog(g,2)),[1,2]);
+});
+
+test('bottom actions use five accessible 48px icon buttons and change play pause icon',()=>{
+ let g=createGame(['甲','乙']);
+ const html=scoreboardPage(g).split('<div class="match-bottom">')[1];
+ assert.equal((html.match(/board-icon-button/g)||[]).length,5);
+ for(const label of ['暫停比賽','復原上一筆記分','結束比賽','記分說明','統計分析'])assert.ok(html.includes('aria-label="'+label+'"'));
+ assert.equal((html.match(/<svg viewBox="0 0 24 24"/g)||[]).length,5);
+ assert.ok(html.includes('M8 5v14M16 5v14'));
+ const paused=scoreboardPage(pauseClock(g));assert.ok(paused.includes('aria-label="繼續比賽"'));assert.ok(paused.includes('M8 5l11 7-11 7z'));
 });
