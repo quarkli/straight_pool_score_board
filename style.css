@@ -266,3 +266,5 @@ dialog.scoring-modal .reason-button[data-reason="foul"],dialog.scoring-modal .re
 @media(max-width:540px),(max-height:650px){.picker-header{font-size:14px}.picker-header .active-scoring-side{font-size:inherit}}
 
 .scoring-modal .reason-options{grid-template-columns:minmax(0,1fr)}
+
+.ball-row.target-locked .pool-ball-svg{filter:grayscale(1) drop-shadow(0 1px 2px #0005)}

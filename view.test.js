@@ -170,9 +170,9 @@ test('undo restores completed rack ownership instead of clearing it through a st
 test('target limit uses active player score and rack count and recomputes after handover',()=>{
  let g=addTurn(createGame(['甲','乙'],10),{balls:3,outcome:'miss',rackEnd:3});
  g=addTurn(g,{balls:3,outcome:'miss',rackEnd:6});
- let html=scoreboardPage(g);assert.match(html,/data-central-end="13"  aria-label/);assert.match(html,/data-central-end="14" hidden/);
+ let html=scoreboardPage(g);assert.match(html,/data-central-end="13"  aria-label/);assert.match(html,/data-central-end="14" aria-disabled="true"/);
  g=addTurn(g,{balls:1,outcome:'miss',rackEnd:7});html=scoreboardPage(g);
- assert.match(html,/data-central-end="14"  aria-label/);assert.match(html,/data-central-end="15" hidden/);
+ assert.match(html,/data-central-end="14"  aria-label/);assert.match(html,/data-central-end="15" aria-disabled="true"/);
 });
 test('winning score finishes midrack with stopped clock and correct totals',()=>{
  let g=addTurn(createGame(['甲','乙'],10),{balls:3,outcome:'miss',rackEnd:3});
@@ -218,7 +218,7 @@ test('scoreboard opens current-match statistics and uses only this game for both
 
 test('zero-point handovers and negative foul scores do not expand a ten-point picker',()=>{
  let g=createGame(['甲','乙'],10);
- const visibleEnds=game=>[...scoreboardPage(game).matchAll(/data-central-end="(\d+)" (?!hidden)/g)].map(m=>Number(m[1]));
+ const visibleEnds=game=>[...scoreboardPage(game).matchAll(/data-central-end="(\d+)" (?!aria-disabled)/g)].map(m=>Number(m[1]));
  g=addTurn(g,{balls:0,outcome:'miss'});
  assert.deepEqual(visibleEnds(g),Array.from({length:11},(_,i)=>i));
  for(let i=0;i<4;i++){
@@ -313,7 +313,7 @@ test('zero scoring after a rerack does not carry a handover mark to zero',()=>{
 test('target-limited balls hide without removing or repacking their grid rows',()=>{
  let g=addTurn(createGame(['甲','乙'],10),{balls:0,outcome:'miss'});let html=scoreboardPage(g);
  assert.match(html,/--ball-row-count:16/);assert.equal((html.match(/class="ball-row /g)||[]).length,16);
- assert.equal((html.match(/data-central-end="\d+" hidden/g)||[]).length,5);
+ assert.equal((html.match(/data-central-end="\d+" aria-disabled="true"/g)||[]).length,5);
  g=addTurn(g,{balls:3,outcome:'miss',rackEnd:3});html=scoreboardPage(g);
  assert.match(html,/--ball-row-count:16/);assert.equal((html.match(/class="ball-row [^"]*" hidden/g)||[]).length,0);
 });
@@ -427,4 +427,13 @@ test('handover options follow miss safety foul order',()=>{
  const g=addTurn(createGame(['甲','乙']),{balls:0,outcome:'safety'});
  const html=scoringDialog(g,0);const reasons=[...html.matchAll(/data-reason="([^"]+)"/g)].map(m=>m[1]);
  assert.deepEqual(reasons,['miss','safety','foul']);
+});
+
+test('excess target balls remain visible grayscale and disabled without reflow',()=>{
+ let g=addTurn(createGame(['甲','乙'],10),{balls:0,outcome:'safety'});
+ const html=scoreboardPage(g);assert.equal((html.match(/class="pool-ball-svg/g)||[]).length,16);
+ assert.equal((html.match(/target-locked/g)||[]).length,5);
+ for(let n=11;n<=15;n++)assert.match(html,new RegExp('data-central-end="'+n+'" aria-disabled="true"[^>]*disabled'));
+ assert.doesNotMatch(html,/data-central-end="\d+" hidden/);
+ assert.equal((scoreboardPage(createGame(['甲','乙'],10)).match(/class="pool-ball-svg/g)||[]).length,16);
 });
