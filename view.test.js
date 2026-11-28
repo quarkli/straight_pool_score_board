@@ -374,3 +374,12 @@ test('striped balls use a circle-bounded band and zero handovers use an SVG path
  let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss'});g=addTurn(g,{balls:0,outcome:'safety'});
  assert.match(scoreboardPage(g),/<svg class="mark-icon mark-zero"[^]*?<path d="M4 10h12"/);
 });
+
+test('two-column balls keep fixed slots and collapsed records show current rack net score',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'foul'});
+ let html=scoreboardPage(g);assert.match(html,/grid-column:1;grid-row:8/);assert.match(html,/grid-column:2;grid-row:1/);assert.match(html,/grid-column:2;grid-row:8/);
+ assert.match(html,/甲 本場排球合計 2 分/);assert.match(html,/乙 本場排球合計 0 分/);assert.doesNotMatch(html,/data-record-panel="0" open/);
+ html=scoreboardPage(g,{recordExpanded:[true,false]});assert.match(html,/data-record-panel="0" open/);assert.doesNotMatch(html,/data-record-panel="1" open/);
+ g=addTurn(g,{balls:11,outcome:'continue',rackEnd:14});g.rackClearedAt=g.events.length;
+ html=scoreboardPage(g);assert.match(html,/甲 本場排球合計 0 分/);assert.match(html,/乙 本場排球合計 0 分/);
+});

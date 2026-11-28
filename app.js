@@ -1,17 +1,18 @@
-import {cloneData,newId} from './compatibility.js?v=20261125.53';
-import {createFullscreenWakeLock} from './wake-lock.js?v=20261125.53';
-import {installApp,updateInstallButtons} from './pwa.js?v=20261125.53';
-import {bindDeletion} from './deletion.js?v=20261125.53';
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261125.53';
-import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261125.53';
-import {rulesPage,tableDiagram} from './rules.js?v=20261125.53';
-import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261125.53';
-import {matchHistoryPage} from './history.js?v=20261125.53';
+import {cloneData,newId} from './compatibility.js?v=20261128.54';
+import {createFullscreenWakeLock} from './wake-lock.js?v=20261128.54';
+import {installApp,updateInstallButtons} from './pwa.js?v=20261128.54';
+import {bindDeletion} from './deletion.js?v=20261128.54';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261128.54';
+import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261128.54';
+import {rulesPage,tableDiagram} from './rules.js?v=20261128.54';
+import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261128.54';
+import {matchHistoryPage} from './history.js?v=20261128.54';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1',TARGET_PREF='straight-pool-target-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
 const names={miss:'失誤換手',safety:'安全球',foul:'一般犯規',scratch:'母球洗袋／飛出台','break-foul':'開球失誤',continue:'繼續此局',win:'達標獲勝'};
 let draft=null;
+let recordExpanded=[false,false];
 let storageError='',swapped=false,selection=null,summaryTimeout=null,rackSummaryPending=null;
 try{swapped=localStorage.getItem('straight-pool-swap')==='true';}catch{}
 try{const raw=localStorage.getItem(KEY);if(raw)games=validateHistory(JSON.parse(raw));current=games.find(g=>g.status==='active')?.id||null;}catch(e){storageError='無法載入儲存資料，請先匯出備份再繼續。原始資料未覆蓋。';}
@@ -34,7 +35,7 @@ function readyGame(){
  }return draft;
 }
 function ledger(g){const s=stateOf(g);return `<div class="scroll-table"><table><thead><tr><th>局次</th><th>球員</th><th>進球</th><th>結果</th><th>扣分</th><th>淨得分</th><th>累計</th></tr></thead><tbody>${s.rows.length?s.rows.map(r=>`<tr><td>${r.visit}</td><td class="name">${esc(g.players[r.player])}</td><td>${r.balls}</td><td>${names[r.outcome]}${r.third?' · 三犯追加':''}${r.rebreak?' · 重開':''}${r.note?`<div class="note">${esc(r.note)}</div>`:''}</td><td class="negative">${r.penalty?`−${r.penalty}`:'—'}</td><td class="${r.net<0?'negative':'positive'}">${r.net>0?'+':''}${r.net}</td><td><strong>${r.total}</strong></td></tr>`).join(''):'<tr><td colspan="7" class="empty">第一桿，準備好了嗎？</td></tr>'}</tbody></table></div>`;}
-function scorePage(){const g=currentGame();return scoreboardPage(g||readyGame(),{swapped,selection});}
+function scorePage(){const g=currentGame();return scoreboardPage(g||readyGame(),{swapped,selection,recordExpanded});}
 function chart(g){const s=stateOf(g);if(!s.rows.length)return '<div class="empty">尚無計分資料</div>';const series=[[0],[0]],scores=[0,0];s.rows.forEach(r=>{scores[r.player]=r.total;series.forEach((a,i)=>a.push(scores[i]));});const lo=Math.min(0,...series.flat()),hi=Math.max(1,...series.flat()),x=i=>48+i*650/Math.max(1,s.rows.length),y=v=>235-(v-lo)*195/(hi-lo);return `<div class="chart-legend">${g.players.map((n,i)=>`<span style="color:${i?'#a87732':'#21634a'}">● ${esc(n)}</span>`).join('')}</div><div class="chart-wrap"><svg class="chart" viewBox="0 0 740 280" role="img" aria-label="本場雙方累積分數走勢，依記錄先後排列">${[0,1,2,3,4].map(i=>{const v=lo+(hi-lo)*i/4;return `<line x1="48" x2="700" y1="${y(v)}" y2="${y(v)}" stroke="#e2e8e1"/><text x="38" y="${y(v)+4}" text-anchor="end" font-size="12" fill="#71847b">${Math.round(v)}</text>`;}).join('')}${series.map((a,i)=>`<polyline points="${a.map((v,j)=>`${x(j)},${y(v)}`).join(' ')}" stroke="${i?'#b78a47':'#21634a'}" fill="none" stroke-width="3"/>`).join('')}<text x="370" y="270" text-anchor="middle" fill="#71847b" font-size="12">記錄順序（含局內分段記錄）</text></svg></div>`;}
 const rate=(n,d)=>d?`${(n/d*100).toFixed(1)}%`:'—';
 function tacticsTable(players){
@@ -48,7 +49,7 @@ function timeStatsSection(players){return `<section class="card section"><h2>用
 function historyPage(){return matchHistoryPage(games,historyFilters);}
 function render(){const route=location.hash.slice(1)||'score';document.body.classList.toggle('score-screen',route==='score');document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.hash===`#${route}`);if(a.hash===`#${route}`)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});$('#app').innerHTML=(storageError?`<div class="alert">${storageError}</div>`:'')+({rules:()=>rulesPage(scenario),stats:statsPage,history:historyPage,practice:practicePage,score:scorePage}[route]||scorePage)();bind();updateInstallButtons();updateWakeUI();updateClocks();}
 function extra(){const select=$('#outcome');if(!select)return;const g=currentGame(),s=stateOf(g),o=select.value;$('#extra-options').innerHTML=o==='break-foul'?'<label class="checkline"><input type="checkbox" name="rebreak">對手要求原球員重新開球（不勾選則對手接收球位）</label>':(o==='foul'||o==='scratch')&&s.fouls[s.active]>=2?'<label class="checkline"><input type="checkbox" name="warned">這一桿前，已明確告知球員處於兩犯（勾選才追加扣 15 分）</label>':'';}
-function modal(html,title='比賽設定'){delete $('#modal').dataset.playerTone;$('#modal').innerHTML=`<div class="dialog-head"><h2>${title}</h2><button class="btn" data-close>關閉</button></div>${html}`;$('#modal').showModal();$('[data-close]').onclick=()=>$('#modal').close();}
+function modal(html,title='比賽設定'){ $('#modal').classList.remove('scoring-modal');delete $('#modal').dataset.playerTone;$('#modal').innerHTML=`<div class="dialog-head"><h2>${title}</h2><button class="btn" data-close>關閉</button></div>${html}`;$('#modal').showModal();$('[data-close]').onclick=()=>$('#modal').close();}
 function bind(){
  bindDeletion('games',{show:html=>modal(html,'刪除記錄'),notify,remove:async ids=>{
   if(storageError)throw Error(storageError);
@@ -61,6 +62,7 @@ function bind(){
  bindPractice(render,notify);
  for(const [field,key] of [['history-from','from'],['history-to','to'],['history-player','player'],['history-opponent','opponent']]){document.getElementById(field)?.addEventListener('change',e=>{historyFilters[key]=e.target.value;render();});}
 
+ document.querySelectorAll('[data-record-panel]').forEach(d=>d.addEventListener('toggle',()=>{recordExpanded[Number(d.dataset.recordPanel)]=d.open;}));
  document.querySelectorAll('[data-edit-player]').forEach(b=>b.onclick=()=>{
   const g=currentGame()||readyGame(),p=Number(b.dataset.editPlayer);if(g.status==='finished')return;
   modal(`<form id="name-form"><label>選手姓名<input id="player-name" maxlength="40" required value="${esc(g.players[p])}"></label><p class="error" id="name-error"></p><button class="btn primary">確認姓名</button></form>`,'編輯姓名');
@@ -152,7 +154,7 @@ function pickScore(player,balls,end=null){
   return;
  }
  selection={player,balls,end:end??(balls||0)};render();
- const dialog=$('#modal');dialog.dataset.playerTone=String(player);dialog.innerHTML=scoringDialog(g,balls);dialog.showModal();
+ const dialog=$('#modal');dialog.dataset.playerTone=String(player);dialog.innerHTML=scoringDialog(g,balls);dialog.classList.add('scoring-modal');dialog.showModal();
  dialog.querySelector('[data-close]').onclick=()=>{selection=null;dialog.close();render();};
  const shotInput=$('#shot-count');let shotsEdited=false;shotInput.addEventListener('input',()=>shotsEdited=true);
  dialog.querySelectorAll('[data-reason]').forEach(button=>button.onclick=()=>{
@@ -194,7 +196,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261125.53',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261128.54',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
