@@ -237,3 +237,23 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 .score-record,.score-record[style*="grid-column:3"]{transform:none}
 .score-record .turn-mark .mark-foul,.score-record .turn-mark .mark-safety{max-width:calc(50% - var(--dot-size)/2 - 3px)}
 @supports not (width:1cqw){.score-record .turn-mark .mark-foul,.score-record .turn-mark .mark-safety{max-width:calc(50% - 13px)}}
+
+/* Explicit outcome colors only for the three handover reasons. */
+dialog.scoring-modal .reason-button[data-reason="safety"]{background:#d5f2d9;border-color:#6ca77a;color:#174e2a}
+dialog.scoring-modal .reason-button[data-reason="miss"]{background:#fff0a8;border-color:#c5a640;color:#654e0b}
+dialog.scoring-modal .reason-button[data-reason="foul"],dialog.scoring-modal .reason-button[data-reason="break-foul"]{background:#ffd1d1;border-color:#c66c6c;color:#812222}
+.score-with-breakdown{display:flex;align-items:baseline;gap:5px;min-width:0;flex-wrap:wrap}
+.score-breakdown{font-size:15px;letter-spacing:0;white-space:nowrap;line-height:1.2}
+.rack-history{border-bottom:1px solid #c9d7ca;padding:8px 0}
+.rack-history>summary{cursor:pointer;font-size:12px;line-height:1.7;color:var(--player-deep);overflow-wrap:anywhere}
+.rack-history>summary strong{white-space:nowrap}
+.rack-history .visit-group{padding:9px 0}
+.rack-history .history-empty{padding:12px 0;font-size:12px}
+.score-record[data-player-tone="0"],.score-option[data-player-tone="0"]{--marker-color:var(--player-edge)}
+.score-record[data-player-tone="1"],.score-option[data-player-tone="1"]{--marker-color:var(--player-edge)}
+.score-record .turn-mark,.score-record.mark-only .turn-mark{color:var(--marker-color)}
+.score-record .record-dot{background:transparent}
+.score-record .record-dot circle{fill:var(--marker-color);stroke:var(--marker-color)}
+.score-option .option-dot circle{stroke:var(--marker-color)}
+.score-option.chosen .option-dot circle{fill:var(--marker-color)}
+@media(max-width:700px){.score-breakdown{font-size:12px}.match-player-line{gap:8px}.rack-history>summary{font-size:11px}}

@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {createGame,addTurn,finishGame,pauseClock,playerStats,selectOpeningPlayer,stateOf,rackState,undo,resumeClock} from './engine.js';
-import {ball,matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js';
+import {ball,matchStats,scoreboardPage,scoringDialog,duration,inningSummary,rackRecords} from './scoreboard.js';
 import {filterHistory,matchHistoryPage,localDate} from './history.js';
 test('board has 16 aligned ball rows and two independent scrollable history regions',()=>{
  const g=createGame(['甲','乙']);const html=scoreboardPage(g);
@@ -247,7 +247,7 @@ test('compact appearance entries use points, points-minus-penalty and points-S w
  g=addTurn(g,{balls:5,outcome:'foul'});
  g=addTurn(g,{balls:7,outcome:'safety'});
  const html=scoreboardPage(g);
- assert.match(html,/>6<\/span>/);assert.match(html,/>5-1<\/span>/);assert.match(html,/>7S<\/span>/);
+ assert.match(html,/>6<\/span>/);assert.match(html,/>5-1<\/span>/);assert.match(html,/>3S<\/span>/);assert.match(html,/>4S<\/span>/);
  assert.doesNotMatch(html,/visit-summary|得分／失誤／出手|<em>失誤不進/);
  const opening=scoreboardPage(addTurn(createGame(['甲','乙']),{balls:0,outcome:'break-foul'}));
  assert.match(opening,/>0-2<\/span>/);
@@ -382,4 +382,28 @@ test('two-column balls keep fixed slots and records default open with current ra
  html=scoreboardPage(g,{recordExpanded:[true,false]});assert.match(html,/data-record-panel="0" open/);assert.doesNotMatch(html,/data-record-panel="1" open/);
  g=addTurn(g,{balls:11,outcome:'continue',rackEnd:14});g.rackClearedAt=g.events.length;
  html=scoreboardPage(g);assert.match(html,/甲 本場排球合計 0 分/);assert.match(html,/乙 本場排球合計 0 分/);
+});
+
+test('rack history closes cleared racks, preserves deductions and reopens on undo',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'foul',rackEnd:3});
+ g=addTurn(g,{balls:11,outcome:'continue',rackEnd:14});
+ assert.equal(rackRecords(g).length,1);
+ g.rackClearedAt=g.events.length;
+ let racks=rackRecords(g);assert.equal(racks.length,2);assert.equal(racks[0].complete,true);assert.equal(racks[0].rows.reduce((n,r)=>n+r.net,0),13);
+ let html=scoreboardPage(g);assert.match(html,/data-rack-history="0:1" ><summary>第 1 場排球 <strong>2（3-1）/);assert.match(html,/data-rack-history="0:2" open/);
+ html=scoreboardPage(g,{rackExpanded:{'0:1':true}});assert.match(html,/data-rack-history="0:1" open/);
+ assert.match(scoreboardPage(undo(g)),/data-rack-history="0:1" open/);
+});
+test('rack summaries include third-foul rerack penalty and conserve imported long runs',()=>{
+ let g=createGame(['甲','乙']);
+ for(let i=0;i<5;i++)g=addTurn(g,{balls:0,outcome:i%2?'safety':'foul',warned:true});
+ const racks=rackRecords(g);assert.equal(racks.length,2);assert.equal(racks[0].rows.reduce((n,r)=>n+r.penalty,0),18);
+ g=addTurn(createGame(['甲','乙']),{balls:40,outcome:'foul'});
+ const parts=rackRecords(g).flatMap(r=>r.rows);assert.equal(parts.reduce((n,r)=>n+r.balls,0),40);assert.equal(parts.reduce((n,r)=>n+r.penalty,0),1);
+});
+test('score breakdown reports cumulative balls and penalties independent of handicap',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:5,outcome:'foul'});
+ const html=scoreboardPage(g);assert.match(html,/aria-label="累計得分 5，累計扣分 1"/);assert.match(html,/（5-1）/);
+ assert.match(html,/data-record-player="0" data-record-score="5" data-player-tone="0"/);
+ const swapped=scoreboardPage(g,{swapped:true});assert.match(swapped,/grid-column:3" data-record-player="0" data-record-score="5" data-player-tone="0"/);
 });
