@@ -217,3 +217,5 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 .scoring-modal .note,.scoring-modal label,.scoring-modal .shot-details,.scoring-modal .btn{font-size:17px}
 @media(max-width:540px){.match-arena{grid-template-columns:minmax(48px,.45fr) minmax(0,2fr) minmax(48px,.45fr);gap:5px}.ball-picker{padding:5px}.ball-rows,.picker-headers{column-gap:6px}.record-details h2{font-size:11px}.record-details .record-toggle-label{font-size:10px}.scoring-modal .reason-button strong{font-size:21px}.scoring-modal .reason-button span{font-size:16px}}
 @media(max-height:600px){.scoring-modal .reason-button{padding:12px}.scoring-modal .reason-button strong{font-size:21px}}
+.app-version{font-size:10px;color:#526b5c;white-space:nowrap}
+@media(max-width:540px){.app-version{font-size:8px}}

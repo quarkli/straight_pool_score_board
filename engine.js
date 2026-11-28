@@ -1,4 +1,4 @@
-import {cloneData,newId} from './compatibility.js?v=20261128.54';
+import {cloneData,newId} from './compatibility.js?v=20261128.55';
 export const VERSION=1;
 export const outcomes=['miss','safety','foul','scratch','break-foul','continue','win'];
 export function createGame(players,target=100,breaker=0){
