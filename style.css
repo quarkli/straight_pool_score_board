@@ -290,3 +290,7 @@ dialog.scoring-modal .reason-button[data-reason="foul"],dialog.scoring-modal .re
 body.score-screen *,body.score-screen *::before,body.score-screen *::after{animation:none!important;transition:none!important;text-shadow:none!important;box-shadow:none!important}
 .ball-center .pool-ball-svg{filter:none}
 .ball-row.scored-ball .pool-ball-svg,.ball-row.target-locked .pool-ball-svg,.ball-row.scored-ball .eight-ball,.ball-row.target-locked .eight-ball{filter:grayscale(1)}
+
+/* Static outline feedback remains visible even with low-power animations disabled. */
+.scoring-modal .reason-button[data-default-reason]{border-color:#997315}
+.scoring-modal .reason-button.reason-selected{outline:5px solid #f4a900;outline-offset:3px;border-color:#805000;opacity:1}
