@@ -422,3 +422,9 @@ test('central header shows rack number in place of pocketed label',()=>{
  g.rackClearedAt=g.events.length;assert.match(scoreboardPage(g),/class="rack-heading">第 2 次排球/);
  assert.doesNotMatch(scoreboardPage(g),/<span>進球<\/span>/);
 });
+
+test('handover options follow miss safety foul order',()=>{
+ const g=addTurn(createGame(['甲','乙']),{balls:0,outcome:'safety'});
+ const html=scoringDialog(g,0);const reasons=[...html.matchAll(/data-reason="([^"]+)"/g)].map(m=>m[1]);
+ assert.deepEqual(reasons,['miss','safety','foul']);
+});

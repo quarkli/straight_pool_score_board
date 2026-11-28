@@ -264,3 +264,5 @@ dialog.scoring-modal .reason-button[data-reason="foul"],dialog.scoring-modal .re
 .picker-header>span,.picker-header .active-scoring-side{font-size:inherit}
 .picker-header .rack-heading{white-space:nowrap}
 @media(max-width:540px),(max-height:650px){.picker-header{font-size:14px}.picker-header .active-scoring-side{font-size:inherit}}
+
+.scoring-modal .reason-options{grid-template-columns:minmax(0,1fr)}
