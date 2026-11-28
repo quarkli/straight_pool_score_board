@@ -1,13 +1,14 @@
-import {createReasonChoice} from './reason-choice.js?v=20261128.79';
-import {cloneData,newId} from './compatibility.js?v=20261128.79';
-import {createFullscreenWakeLock} from './wake-lock.js?v=20261128.79';
-import {installApp,updateInstallButtons} from './pwa.js?v=20261128.79';
-import {bindDeletion} from './deletion.js?v=20261128.79';
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261128.79';
-import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261128.79';
-import {rulesPage,tableDiagram} from './rules.js?v=20261128.79';
-import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261128.79';
-import {matchHistoryPage} from './history.js?v=20261128.79';
+import {exportJsonFile} from './json-export.js?v=20261128.80';
+import {createReasonChoice} from './reason-choice.js?v=20261128.80';
+import {cloneData,newId} from './compatibility.js?v=20261128.80';
+import {createFullscreenWakeLock} from './wake-lock.js?v=20261128.80';
+import {installApp,updateInstallButtons} from './pwa.js?v=20261128.80';
+import {bindDeletion} from './deletion.js?v=20261128.80';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261128.80';
+import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261128.80';
+import {rulesPage,tableDiagram} from './rules.js?v=20261128.80';
+import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261128.80';
+import {matchHistoryPage} from './history.js?v=20261128.80';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1',TARGET_PREF='straight-pool-target-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -26,7 +27,13 @@ function currentGame(){return games.find(g=>g.id===current);}
 function payload(){return {schemaVersion:1,app:'straight_pool_score_board',exportedAt:new Date().toISOString(),games};}
 async function save(){try{if(storageError)throw Error(storageError);localStorage.setItem(KEY,JSON.stringify(payload()));}catch(e){notify('瀏覽器儲存失敗，請立即匯出 JSON 備份。');return false;}if(fileHandle)try{const w=await fileHandle.createWritable();await w.write(JSON.stringify(payload(),null,2));await w.close();}catch{notify('JSON 檔案未更新，請重新選擇檔案或下載備份。');fileHandle=null;}return true;}
 function put(g){const i=games.findIndex(x=>x.id===g.id);if(i<0)games.push(g);else games[i]=g;current=g.id;save();render();}
-function exportJSON(list=games){const data=storageError?localStorage.getItem(KEY):JSON.stringify({...payload(),games:list},null,2);const blob=new Blob([data],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`straight-pool-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);notify('JSON 備份已下載。');}
+async function exportJSON(list=games){
+ try{
+  const data=storageError?localStorage.getItem(KEY):JSON.stringify({...payload(),games:list},null,2);
+  const result=await exportJsonFile(data,`straight-pool-${new Date().toISOString().slice(0,10)}.json`);
+  if(result!=='cancelled')notify(result==='saved'?'JSON 備份已保存。':'已送出 JSON 下載，請查看瀏覽器下載項目。');
+ }catch(e){notify('JSON 匯出失敗：'+(e.message||'請檢查瀏覽器下載權限後重試。'));}
+}
 function head(kicker,title,desc,actions=''){return `<div class="page-head"><div><div class="eyebrow">${kicker}</div><h1>${title}</h1><p>${desc}</p></div><div class="actions">${actions}</div></div>`;}
 function btn(action,text,kind=''){return `<button class="btn ${kind}" data-action="${action}">${text}</button>`;}
 function preferredTarget(){try{const raw=localStorage.getItem(TARGET_PREF);const value=Number(raw??games.at(-1)?.target??100);if(Number.isInteger(value)&&value>=1&&value<=10000)return value;}catch{}return 100;}
@@ -220,7 +227,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261128.79',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261128.80',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
