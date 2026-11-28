@@ -259,3 +259,8 @@ dialog.scoring-modal .reason-button[data-reason="foul"],dialog.scoring-modal .re
 @media(max-width:700px){.score-breakdown{font-size:12px}.match-player-line{gap:8px}.rack-history>summary{font-size:11px}}
 
 .ball-row.scored-ball .pool-ball-svg{filter:grayscale(1) drop-shadow(0 1px 2px #0005)}
+
+.picker-header{grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr);font-size:18px;line-height:1.2}
+.picker-header>span,.picker-header .active-scoring-side{font-size:inherit}
+.picker-header .rack-heading{white-space:nowrap}
+@media(max-width:540px),(max-height:650px){.picker-header{font-size:14px}.picker-header .active-scoring-side{font-size:inherit}}

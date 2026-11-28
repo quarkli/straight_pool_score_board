@@ -415,3 +415,10 @@ test('scored balls turn grayscale by rack position and reset on rerack or undo',
  g=addTurn(g,{balls:2,outcome:'miss',rackEnd:5});assert.equal(marked(g),5);assert.equal(marked(undo(g)),3);
  g=addTurn(g,{balls:9,outcome:'continue',rackEnd:14});assert.equal(marked(g),14);g.rackClearedAt=g.events.length;assert.equal(marked(g),0);
 });
+
+test('central header shows rack number in place of pocketed label',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:14,outcome:'continue',rackEnd:14});
+ assert.match(scoreboardPage(g),/class="rack-heading">第 1 次排球/);
+ g.rackClearedAt=g.events.length;assert.match(scoreboardPage(g),/class="rack-heading">第 2 次排球/);
+ assert.doesNotMatch(scoreboardPage(g),/<span>進球<\/span>/);
+});
