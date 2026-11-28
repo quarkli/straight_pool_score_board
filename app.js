@@ -1,12 +1,12 @@
-import {cloneData,newId} from './compatibility.js?v=20261128.73';
-import {createFullscreenWakeLock} from './wake-lock.js?v=20261128.73';
-import {installApp,updateInstallButtons} from './pwa.js?v=20261128.73';
-import {bindDeletion} from './deletion.js?v=20261128.73';
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261128.73';
-import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261128.73';
-import {rulesPage,tableDiagram} from './rules.js?v=20261128.73';
-import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261128.73';
-import {matchHistoryPage} from './history.js?v=20261128.73';
+import {cloneData,newId} from './compatibility.js?v=20261128.74';
+import {createFullscreenWakeLock} from './wake-lock.js?v=20261128.74';
+import {installApp,updateInstallButtons} from './pwa.js?v=20261128.74';
+import {bindDeletion} from './deletion.js?v=20261128.74';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261128.74';
+import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261128.74';
+import {rulesPage,tableDiagram} from './rules.js?v=20261128.74';
+import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261128.74';
+import {matchHistoryPage} from './history.js?v=20261128.74';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1',TARGET_PREF='straight-pool-target-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -90,12 +90,12 @@ async function action(a){
  if(a==='install'){await installApp({show:html=>modal(html,'本地安裝'),notify});return;}
  if(a==='load-demo'){await loadDemo();return;}
  if(a==='history-reset'){historyFilters={from:'',to:'',player:'',opponent:''};render();return;}
- if(a==='score-help'){modal('<p>首次記分前，可從任一側選擇進球數；先記分者為先攻。開始後直接按中央球號，計入當前選手。</p><p>球號表示本場排球累計進球位置，例如已進 3 顆後按 6，只新增 3 分。母球表示零分。</p><p>白色圓點代表該選手的進球，固定置中；安全球標記在圓點右側，犯規及 x3 標記在左側；△ 代表安全球，× 代表犯規，x3 代表連續三犯。已有進球後，該位置沒有本選手得分圓點的零分換手以 − 表示；已有得分圓點時不加 −，安全球為 −△，犯規為 −×，不增加得分圓點；零分母球不作標記。同位置複數安全球以 △’ 表示、複數犯規以 ×’ 表示，第二次起固定只加一個撇，不再增加；第三次連續犯規仍改為 x3。</p><p>14／15 顆直接記分並進入下一場排球，延續當前選手。修正可撤銷上一筆。紀錄中 6 表示得 6 分，5-1 表示進 5 球後扣 1 分，7S 表示進 7 球後安全球換手。</p>','記分說明');return;}
+ if(a==='score-help'){modal('<p>設定目標分數時選擇左側先攻或右側先攻，隨即開始比賽。直接按中央球號，計入當前選手。</p><p>球號表示本場排球累計進球位置，例如已進 3 顆後按 6，只新增 3 分。母球表示零分。</p><p>選手色圓點代表該選手的進球，固定置中；安全球標記在圓點右側，犯規及 x3 標記在左側；△ 代表安全球，× 代表犯規，x3 代表連續三犯。已有進球後，該位置沒有本選手得分圓點的零分換手以 − 表示；已有得分圓點時不加 −，安全球為 −△，犯規為 −×，不增加得分圓點；零分母球不作標記。同位置複數安全球以 △’ 表示、複數犯規以 ×’ 表示，第二次起固定只加一個撇，不再增加；第三次連續犯規仍改為 x3。</p><p>14／15 顆直接記分並進入下一場排球，延續當前選手。修正可撤銷上一筆。紀錄中 6 表示得 6 分，5-1 表示進 5 球後扣 1 分，7S 表示進 7 球後安全球換手。</p>','記分說明');return;}
  if(a==='match-stats'){const g=currentGame();if(g)modal(matchStats(g),'本場雙方統計');return;}
  if(a==='start'){
   if(currentGame()||storageError)return;const g=readyGame();
-  modal(`<form id="start-form"><label>目標分數<input id="start-target" type="number" min="1" max="10000" step="1" required value="${preferredTarget()}"></label><p class="note">確認後開始計時與記分，目標分數會自動沿用至下一場。</p><p class="error" id="start-error"></p><button class="btn primary">開始比賽</button></form>`,'開始比賽');
-  $('#start-form').onsubmit=e=>{e.preventDefault();try{const next=createGame(g.players,Number($('#start-target').value));rememberTarget(next.target);localStorage.setItem(PREF,JSON.stringify(next.players));$('#modal').close();draft=null;put(next);}catch(e){$('#start-error').textContent=translateError(e.message);}};return;
+  modal(`<form id="start-form"><label>目標分數<input id="start-target" type="number" min="1" max="10000" step="1" required value="${preferredTarget()}"></label><p class="note">確認後開始計時與記分，目標分數會自動沿用至下一場。</p><p class="error" id="start-error"></p><div class="opening-choices"><button type="submit" class="btn primary" data-opening-side="0">左側先攻</button><button type="submit" class="btn primary" data-opening-side="1">右側先攻</button></div></form>`,'開始比賽');
+  $('#start-form').onsubmit=e=>{e.preventDefault();try{const next=createGame(g.players,Number($('#start-target').value),swapped?1-Number(e.submitter?.dataset.openingSide||0):Number(e.submitter?.dataset.openingSide||0));rememberTarget(next.target);localStorage.setItem(PREF,JSON.stringify(next.players));$('#modal').close();draft=null;put(next);}catch(e){$('#start-error').textContent=translateError(e.message);}};return;
  }
  if(a==='target'){
   const g=currentGame();if(!g||g.status!=='active')return;
@@ -212,7 +212,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261128.73',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261128.74',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}

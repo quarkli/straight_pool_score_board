@@ -5,7 +5,7 @@ import {filterHistory,matchHistoryPage,localDate} from './history.js';
 test('board has 16 aligned ball rows and two independent scrollable history regions',()=>{
  const g=createGame(['甲','乙']);const html=scoreboardPage(g);
  assert.equal((html.match(/class="ball-row /g)||[]).length,16);
- assert.equal((html.match(/data-pick=/g)||[]).length,32);
+ assert.equal((html.match(/data-pick=/g)||[]).length,0);
  assert.equal((html.match(/class="shot-history"/g)||[]).length,2);
  assert.match(html,/id="wall-clock"/);assert.match(html,/id="match-clock"/);
 });
@@ -16,11 +16,11 @@ test('swap changes display order, never player identity, turn or score',()=>{
 });
 test('picking five highlights exactly five options on the selected side',()=>{
  const html=scoreboardPage(createGame(['甲','乙']),{selection:{player:0,balls:5}});
- assert.equal((html.match(/score-option chosen/g)||[]).length,5);
+ assert.equal((html.match(/score-option chosen/g)||[]).length,0);
 });
 test('paused board disables scoring, dialog exposes opening penalty and optional shot count',()=>{
  const g=pauseClock(createGame(['甲','乙']));const html=scoreboardPage(g);
- assert.equal((html.match(/data-pick="\d+"[^>]*disabled/g)||[]).length,32);
+ assert.equal((html.match(/data-pick="\d+"[^>]*disabled/g)||[]).length,0);
  assert.match(scoringDialog(g,0),/data-reason="break-foul"/);
  assert.match(scoringDialog(g,5),/id="shot-count"/);
 });
@@ -79,7 +79,7 @@ test('14/15 scoring entries and cumulative visit thresholds have summaries, ordi
 
 test('score buttons contain white dots without visible numbers',()=>{
  const html=scoreboardPage(createGame(['甲','乙']));
- assert.equal((html.match(/class="option-dot"/g)||[]).length,32);
+ assert.equal((html.match(/class="option-dot"/g)||[]).length,0);
  assert.ok(!html.includes('<span>分</span></button>'));
 });
 
@@ -258,14 +258,14 @@ test('match and history show defensive and rack-opening success rates with count
 });
 
 test('breaker label appears only after first confirmed score and follows identity when swapped',()=>{
- const initial=createGame(['甲','乙']);assert.doesNotMatch(scoreboardPage(initial),/breaker-label/);
+ const initial=createGame(['甲','乙']);assert.match(scoreboardPage(initial),/breaker-label/);
  let g=addTurn(selectOpeningPlayer(initial,1),{balls:0,outcome:'safety'});
  for(const swapped of [false,true]){const html=scoreboardPage(g,{swapped});assert.equal((html.match(/class="breaker-label"/g)||[]).length,1);assert.match(html,/>乙<\/button><\/h1><span class="breaker-label">（先攻）<\/span>/);}
  g=addTurn(g,{balls:3,outcome:'miss'});assert.match(scoreboardPage(g),/>乙<\/button><\/h1><span class="breaker-label">（先攻）/);
 });
 
 test('scoring header underlines the active display side and follows swap and handover',()=>{
- const initial=createGame(['甲','乙']);assert.doesNotMatch(scoreboardPage(initial),/class="active-scoring-side"/);
+ const initial=createGame(['甲','乙']);assert.match(scoreboardPage(initial),/class="active-scoring-side"/);
  let g=addTurn(initial,{balls:2,outcome:'miss'});
  assert.match(scoreboardPage(g),/class="active-scoring-side" aria-current="true">後攻/);
  assert.match(scoreboardPage(g,{swapped:true}),/class="active-scoring-side" aria-current="true">後攻/);
@@ -276,7 +276,7 @@ test('scoring header underlines the active display side and follows swap and han
 test('ready board replaces setup with editable names and start button while all play controls are disabled',()=>{
  const g={...pauseClock(createGame(['A','B'])),status:'ready'},html=scoreboardPage(g);
  assert.match(html,/data-action="start"/);assert.doesNotMatch(html,/setup-form/);assert.equal((html.match(/data-edit-player=/g)||[]).length,2);
- assert.equal((html.match(/data-pick="\d+"[^>]*disabled/g)||[]).length,32);
+ assert.equal((html.match(/data-pick="\d+"[^>]*disabled/g)||[]).length,0);
  assert.match(html,/data-action="clock" disabled/);assert.match(html,/data-handicap-player="0"[^>]*disabled/);
 });
 
@@ -353,7 +353,7 @@ test('zero-point miss after scoring leaves a dash at the shooters current ball w
 });
 
 test('scoreboard has scoring help, hides undecided order labels and uses the new rack name',()=>{
- const initial=scoreboardPage(createGame(['甲','乙']));assert.doesNotMatch(initial,/左側記分|右側記分|>先攻<|>後攻<|picker-footer/);assert.match(initial,/data-action="score-help">記分說明/);
+ const initial=scoreboardPage({...createGame(['甲','乙']),status:'ready'});assert.doesNotMatch(initial,/左側記分|右側記分|>先攻<|>後攻<|picker-footer/);assert.match(initial,/data-action="score-help">記分說明/);
  const g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss'}),html=scoreboardPage(g);assert.match(html,/第 1 場排球/);assert.match(html,/>先攻<\/span>/);assert.match(html,/>後攻<\/span>/);
 });
 
@@ -436,4 +436,25 @@ test('excess target balls remain visible grayscale and disabled without reflow',
  for(let n=11;n<=15;n++)assert.match(html,new RegExp('data-central-end="'+n+'" aria-disabled="true"[^>]*disabled'));
  assert.doesNotMatch(html,/data-central-end="\d+" hidden/);
  assert.equal((scoreboardPage(createGame(['甲','乙'],10)).match(/class="pool-ball-svg/g)||[]).length,16);
+});
+
+test('opening uses central balls without side controls and follows chosen breaker immediately',()=>{
+ const g=createGame(['甲','乙'],70,1),html=scoreboardPage(g);
+ assert.doesNotMatch(html,/data-pick=/);assert.equal((html.match(/data-central-end=/g)||[]).length,16);
+ assert.match(html,/>乙<\/button><\/h1><span class="breaker-label">（先攻）/);
+ assert.match(html,/class="active-scoring-side" aria-current="true">先攻/);
+});
+test('inactive player score and records dim on handover and recover when finished',()=>{
+ let g=createGame(['甲','乙']);let html=scoreboardPage(g);
+ assert.equal((html.match(/inactive-player/g)||[]).length,2);
+ g=addTurn(g,{balls:2,outcome:'miss'});html=scoreboardPage(g);
+ assert.match(html,/class="match-player inactive-player/);
+ assert.match(html,/class="player-record-panel inactive-player" data-player-tone="0"/);
+ assert.doesNotMatch(scoreboardPage(finishGame(g,0)),/inactive-player/);
+});
+test('rerack summary shows both rack net scores instead of ball count',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'foul',rackEnd:3});
+ g=addTurn(g,{balls:11,outcome:'continue',rackEnd:14});
+ assert.match(inningSummary(g),/class="inning-score">2 - 11<small>甲 - 乙/);
+ assert.doesNotMatch(inningSummary(g),/顆合法進球/);
 });

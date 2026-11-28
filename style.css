@@ -270,3 +270,12 @@ dialog.scoring-modal .reason-button[data-reason="foul"],dialog.scoring-modal .re
 .ball-row.target-locked .pool-ball-svg{filter:grayscale(1) drop-shadow(0 1px 2px #0005)}
 
 .ball-row.scored-ball .eight-ball,.ball-row.target-locked .eight-ball{filter:grayscale(1) brightness(.8) drop-shadow(0 1px 2px #0005)}
+
+/* A separate center gutter keeps the divider clear of all scoring markers. */
+.ball-rows{position:relative;column-gap:24px}
+.ball-rows::after{content:"";position:absolute;top:0;bottom:0;left:50%;width:1px;background:#c1d0c466;pointer-events:none;transform:translateX(-.5px)}
+.match-player.inactive-player .score-with-breakdown,.player-record-panel.inactive-player{opacity:.5}
+.opening-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.ball-row.scored-ball .eight-ball,.ball-row.target-locked .eight-ball{filter:grayscale(1) drop-shadow(0 1px 2px #0005)}
+.ball-row.scored-ball .eight-ball>circle:first-child,.ball-row.scored-ball .eight-ball>circle:nth-child(2),.ball-row.target-locked .eight-ball>circle:first-child,.ball-row.target-locked .eight-ball>circle:nth-child(2){fill:#555}
+@media(max-width:540px){.ball-rows{column-gap:16px}}
