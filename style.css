@@ -268,3 +268,5 @@ dialog.scoring-modal .reason-button[data-reason="foul"],dialog.scoring-modal .re
 .scoring-modal .reason-options{grid-template-columns:minmax(0,1fr)}
 
 .ball-row.target-locked .pool-ball-svg{filter:grayscale(1) drop-shadow(0 1px 2px #0005)}
+
+.ball-row.scored-ball .eight-ball,.ball-row.target-locked .eight-ball{filter:grayscale(1) brightness(.8) drop-shadow(0 1px 2px #0005)}
