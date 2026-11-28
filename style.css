@@ -231,3 +231,9 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 .scoring-modal .reason-button{touch-action:manipulation;user-select:none;-webkit-user-select:none}.scoring-modal .reason-button>*{pointer-events:none}
 
 .ball-center .pool-ball-svg{width:94%;height:94%}
+
+/* Reserve marker lanes: icons stay inside their side of each ball row. */
+.ball-row{grid-template-columns:minmax(0,1.15fr) minmax(0,1.7fr) minmax(0,1.15fr);column-gap:10px}
+.score-record,.score-record[style*="grid-column:3"]{transform:none}
+.score-record .turn-mark .mark-foul,.score-record .turn-mark .mark-safety{max-width:calc(50% - var(--dot-size)/2 - 3px)}
+@supports not (width:1cqw){.score-record .turn-mark .mark-foul,.score-record .turn-mark .mark-safety{max-width:calc(50% - 13px)}}
