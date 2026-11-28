@@ -237,5 +237,3 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 .score-record,.score-record[style*="grid-column:3"]{transform:none}
 .score-record .turn-mark .mark-foul,.score-record .turn-mark .mark-safety{max-width:calc(50% - var(--dot-size)/2 - 3px)}
 @supports not (width:1cqw){.score-record .turn-mark .mark-foul,.score-record .turn-mark .mark-safety{max-width:calc(50% - 13px)}}
-
-button,a[href],summary{touch-action:manipulation}
