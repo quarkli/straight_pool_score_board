@@ -257,3 +257,5 @@ dialog.scoring-modal .reason-button[data-reason="foul"],dialog.scoring-modal .re
 .score-option .option-dot circle{stroke:var(--marker-color)}
 .score-option.chosen .option-dot circle{fill:var(--marker-color)}
 @media(max-width:700px){.score-breakdown{font-size:12px}.match-player-line{gap:8px}.rack-history>summary{font-size:11px}}
+
+.ball-row.scored-ball .pool-ball-svg{filter:grayscale(1) drop-shadow(0 1px 2px #0005)}

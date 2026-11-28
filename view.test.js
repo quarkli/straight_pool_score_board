@@ -407,3 +407,11 @@ test('score breakdown reports cumulative balls and penalties independent of hand
  assert.match(html,/data-record-player="0" data-record-score="5" data-player-tone="0"/);
  const swapped=scoreboardPage(g,{swapped:true});assert.match(swapped,/grid-column:3" data-record-player="0" data-record-score="5" data-player-tone="0"/);
 });
+
+test('scored balls turn grayscale by rack position and reset on rerack or undo',()=>{
+ let g=addTurn(createGame(['甲','乙']),{balls:3,outcome:'miss',rackEnd:3});
+ const marked=game=>(scoreboardPage(game).match(/class="ball-row [^"]*scored-ball/g)||[]).length;
+ assert.equal(marked(g),3);g=addTurn(g,{balls:0,outcome:'foul'});assert.equal(marked(g),3);
+ g=addTurn(g,{balls:2,outcome:'miss',rackEnd:5});assert.equal(marked(g),5);assert.equal(marked(undo(g)),3);
+ g=addTurn(g,{balls:9,outcome:'continue',rackEnd:14});assert.equal(marked(g),14);g.rackClearedAt=g.events.length;assert.equal(marked(g),0);
+});
