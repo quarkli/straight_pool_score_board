@@ -1,4 +1,4 @@
-const VERSION='20261128.64',PREFIX='straight-pool-app-',CACHE=PREFIX+VERSION;
+const VERSION='20261128.65',PREFIX='straight-pool-app-',CACHE=PREFIX+VERSION;
 const FILES=['./','./index.html','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png',...['compatibility.js','app.js','engine.js','scoreboard.js','history.js','practice.js','rules.js','deletion.js','pwa.js','wake-lock.js','style.css','demo-games.json'].map(p=>'./'+p+'?v='+VERSION)];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES.map(file=>new Request(new URL(file,self.registration.scope),{cache:'reload'})))).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith(PREFIX)&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
