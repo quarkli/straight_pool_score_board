@@ -1,18 +1,18 @@
-import {cloneData,newId} from './compatibility.js?v=20261128.61';
-import {createFullscreenWakeLock} from './wake-lock.js?v=20261128.61';
-import {installApp,updateInstallButtons} from './pwa.js?v=20261128.61';
-import {bindDeletion} from './deletion.js?v=20261128.61';
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261128.61';
-import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261128.61';
-import {rulesPage,tableDiagram} from './rules.js?v=20261128.61';
-import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261128.61';
-import {matchHistoryPage} from './history.js?v=20261128.61';
+import {cloneData,newId} from './compatibility.js?v=20261128.62';
+import {createFullscreenWakeLock} from './wake-lock.js?v=20261128.62';
+import {installApp,updateInstallButtons} from './pwa.js?v=20261128.62';
+import {bindDeletion} from './deletion.js?v=20261128.62';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261128.62';
+import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261128.62';
+import {rulesPage,tableDiagram} from './rules.js?v=20261128.62';
+import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261128.62';
+import {matchHistoryPage} from './history.js?v=20261128.62';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1',TARGET_PREF='straight-pool-target-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
 const names={miss:'失誤換手',safety:'安全球',foul:'一般犯規',scratch:'母球洗袋／飛出台','break-foul':'開球失誤',continue:'繼續此局',win:'達標獲勝'};
 let draft=null;
-let recordExpanded=[false,false];
+let recordExpanded=[true,true];
 let storageError='',swapped=false,selection=null,summaryTimeout=null,rackSummaryPending=null;
 try{swapped=localStorage.getItem('straight-pool-swap')==='true';}catch{}
 try{const raw=localStorage.getItem(KEY);if(raw)games=validateHistory(JSON.parse(raw));current=games.find(g=>g.status==='active')?.id||null;}catch(e){storageError='無法載入儲存資料，請先匯出備份再繼續。原始資料未覆蓋。';}
@@ -210,7 +210,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261128.61',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261128.62',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}
