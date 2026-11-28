@@ -1,12 +1,12 @@
-import {cloneData,newId} from './compatibility.js?v=20261128.60';
-import {createFullscreenWakeLock} from './wake-lock.js?v=20261128.60';
-import {installApp,updateInstallButtons} from './pwa.js?v=20261128.60';
-import {bindDeletion} from './deletion.js?v=20261128.60';
-import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261128.60';
-import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261128.60';
-import {rulesPage,tableDiagram} from './rules.js?v=20261128.60';
-import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261128.60';
-import {matchHistoryPage} from './history.js?v=20261128.60';
+import {cloneData,newId} from './compatibility.js?v=20261128.61';
+import {createFullscreenWakeLock} from './wake-lock.js?v=20261128.61';
+import {installApp,updateInstallButtons} from './pwa.js?v=20261128.61';
+import {bindDeletion} from './deletion.js?v=20261128.61';
+import {practicePage,bindPractice,updatePracticeClock} from './practice.js?v=20261128.61';
+import {setHandicap,renamePlayer,changeTarget,createGame,stateOf,addTurn,finishGame,undo,validateHistory,playerStats,tacticalStats,pauseClock,resumeClock,clockTotals,selectOpeningPlayer,rackState} from './engine.js?v=20261128.61';
+import {rulesPage,tableDiagram} from './rules.js?v=20261128.61';
+import {matchStats,scoreboardPage,scoringDialog,duration,inningSummary} from './scoreboard.js?v=20261128.61';
+import {matchHistoryPage} from './history.js?v=20261128.61';
 let historyFilters={from:'',to:'',player:'',opponent:''};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='straight-pool-v1',PREF='straight-pool-players-v1',TARGET_PREF='straight-pool-target-v1';let games=[],current=null,scenario='normal',fileHandle=null,filterPlayer='',filterOpponent='';
@@ -157,7 +157,20 @@ function pickScore(player,balls,end=null){
  const dialog=$('#modal');dialog.dataset.playerTone=String(player);dialog.innerHTML=scoringDialog(g,balls);dialog.classList.add('scoring-modal');dialog.showModal();
  dialog.querySelector('[data-close]').onclick=()=>{selection=null;dialog.close();render();};
  const shotInput=$('#shot-count');let shotsEdited=false;shotInput.addEventListener('input',()=>shotsEdited=true);
- dialog.querySelectorAll('[data-reason]').forEach(button=>button.onclick=()=>{
+ let reasonAccepted=false;
+ dialog.querySelectorAll('[data-reason]').forEach(button=>{
+ button.addEventListener('pointerdown',event=>{
+  if(!event.isPrimary||event.button!==0||button.disabled||reasonAccepted)return;
+  event.preventDefault();event.stopPropagation();
+  // Consume the compatibility click after the modal closes, avoiding click-through.
+  const swallow=event=>{if(event.detail>0){event.preventDefault();event.stopImmediatePropagation();cleanup();}};
+  const cleanup=()=>{document.removeEventListener('click',swallow,true);document.removeEventListener('pointerdown',cleanup,true);clearTimeout(timer);};
+  const timer=setTimeout(cleanup,1000);
+  document.addEventListener('click',swallow,true);document.addEventListener('pointerdown',cleanup,true);
+  button.click();
+ });
+ button.onclick=()=>{
+  if(reasonAccepted)return;reasonAccepted=true;
   try{
    const outcome=button.dataset.reason;
    const shots=shotsEdited?Number(shotInput.value):Math.max(1,balls+(['continue','win'].includes(outcome)?0:1));
@@ -181,7 +194,8 @@ function pickScore(player,balls,end=null){
     rackSummaryPending={id:next.id,length:next.events.length};
     summaryTimeout=setTimeout(()=>{summaryTimeout=null;if($('#modal').open)$('#modal').close();finishRackSummary();},5000);
    }else if(next.status==='finished'){notify(`${next.players[next.winner]} 達標獲勝！`);}
-  }catch(e){$('#dialog-error').textContent=translateError(e.message);}
+  }catch(e){reasonAccepted=false;$('#dialog-error').textContent=translateError(e.message);}
+ };
  });
 }
 function finishRackSummary(){
@@ -196,7 +210,7 @@ window.addEventListener('hashchange',render);window.addEventListener('storage',e
 
 async function loadDemo(){
  try{
-  const response=await fetch(new URL('./demo-games.json?v=20261128.60',import.meta.url));
+  const response=await fetch(new URL('./demo-games.json?v=20261128.61',import.meta.url));
   if(!response.ok)throw Error('demo fetch');
   const incoming=validateHistory(await response.json());let count=0;
   for(const game of incoming){if(!games.some(g=>g.id===game.id)){games.push(game);count++;}}

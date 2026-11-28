@@ -227,3 +227,5 @@ dialog[data-player-tone] .eyebrow{color:var(--player-deep)}
 @media(max-width:540px),(max-height:650px){.picker-header .active-scoring-side{font-size:16px}.picker-headers{min-height:25px}.ball-picker{grid-template-rows:25px minmax(0,1fr)}}
 
 .picker-headers{grid-template-columns:minmax(0,1fr)}
+
+.scoring-modal .reason-button{touch-action:manipulation;user-select:none;-webkit-user-select:none}.scoring-modal .reason-button>*{pointer-events:none}
